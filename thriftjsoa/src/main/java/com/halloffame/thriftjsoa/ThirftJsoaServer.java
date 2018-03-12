@@ -14,15 +14,15 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 public class ThirftJsoaServer {
-	private String ip = "localhost";
+	private String host = "localhost";
 	private int port = 9090;
 	private ZooKeeper zk;
 	private String zkRootPath = "/thriftJsoaServer";
 	private TProcessor tProcessor = null;
 	
-	public ThirftJsoaServer(int port, String zkConnStr, String ip, TProcessor tProcessor) throws Exception {
+	public ThirftJsoaServer(int port, String zkConnStr, String host, TProcessor tProcessor) throws Exception {
 		this.port = port;
-		this.ip = ip;
+		this.host = host;
 		this.tProcessor = tProcessor;
 		this.zk(zkConnStr);
 	}
@@ -35,7 +35,7 @@ public class ThirftJsoaServer {
             zk.create(zkRootPath, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT); 
         }
 		//创建一个子节点
-		zk.create(zkRootPath + "/" + ip + ":" + port, "someData".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+		zk.create(zkRootPath + "/" + host + ":" + port, "someData".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
 	}
 	
 	public void run() throws Exception {

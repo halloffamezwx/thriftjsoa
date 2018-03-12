@@ -7,9 +7,9 @@
         http://www.springframework.org/schema/context  
         http://www.springframework.org/schema/context/spring-context.xsd">
  
-    <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run">
-	    <constructor-arg name="port" value="4567"/>
-	    <constructor-arg name="zkConnStr" value="localhost:2181"/>
+    <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
+	    <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
+	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 	</bean>
 
 </beans>

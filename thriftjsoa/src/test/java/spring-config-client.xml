@@ -10,21 +10,23 @@
     <!-- <context:component-scan base-package="thrift.test"/> -->
     
     <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
-	    <constructor-arg name="host" value="localhost"/>
-	    <constructor-arg name="port" value="4567"/>
-	    <property name="timeout" value="1000"/>
+	    <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
+	    <constructor-arg name="port" value="4567"/> <!-- 连接代理服务的端口 -->
+	    <property name="timeout" value="1000"/> <!-- 客户端读超时时间（毫秒） -->
 	</bean>
 	
+	<!-- thrift的传输方式 ，实例化成功后运行TFastFramedTransport的open方法 -->
 	<bean id="tFastFramedTransport" class="org.apache.thrift.transport.TFastFramedTransport" init-method="open" destroy-method="close" scope="prototype">
-	    <constructor-arg name="underlying" ref="tSocket"/>
+	    <constructor-arg name="underlying" ref="tSocket"/> 
 	</bean>
 	
+	<!-- thrift的传输协议 -->
 	<bean id="tCompactProtocol" class="org.apache.thrift.protocol.TCompactProtocol" scope="prototype">
-	    <constructor-arg name="transport" ref="tFastFramedTransport"/>
+	    <constructor-arg name="transport" ref="tFastFramedTransport"/> 
 	</bean>
 	
 	<bean id="testClient" class="thrift.test.ThriftTest.Client" scope="prototype">
-	    <constructor-arg name="prot" ref="tCompactProtocol"/>
+	    <constructor-arg name="prot" ref="tCompactProtocol"/> 
 	</bean>
 
 </beans>
