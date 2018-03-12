@@ -147,7 +147,11 @@ public static void main(String [] args) throws Exception {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-proxy.xml：代理端的spring配置文件</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-server.xml：服务端的spring配置文件</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.thrift：接口定义文件</br>
-&nbsp;&nbsp;&nbsp;|-pom.xml：依赖的库文件
+&nbsp;&nbsp;&nbsp;|-pom.xml：依赖的库文件</br>
+&nbsp;&nbsp;&nbsp;|-tools</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.exe：用这个来执行ThriftTest.thrift生成接口代码等</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ZooInspector.zip：zk的一个客户端工具</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-zookeeper-3.4.10.tar.gz：zk的安装文件，解压即可
 
 <b>三 持续完善中：</b>
 
