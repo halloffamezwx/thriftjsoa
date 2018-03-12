@@ -99,7 +99,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-<b>`spring-config-client.xml`</b>：
+<b><i>`spring-config-client.xml`</i></b>：
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
