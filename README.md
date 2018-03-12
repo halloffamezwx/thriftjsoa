@@ -151,7 +151,8 @@ public static void main(String [] args) throws Exception {
 &nbsp;&nbsp;&nbsp;|-tools</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.exe：用这个来执行ThriftTest.thrift生成接口代码等</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ZooInspector.zip：zk的一个客户端工具</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-zookeeper-3.4.10.tar.gz：zk的安装文件，解压即可
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-zookeeper-3.4.10.tar.gz：zk的安装文件，解压即可</br>
+&nbsp;&nbsp;&nbsp;|-LICENSE：MIT协议
 
 <b>三 持续完善中：</b>
 
