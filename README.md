@@ -24,7 +24,7 @@ service ThriftTest
 
 <b><i>2</i></b> 使用tools目录的`thrift.exe`执行命令`thrift --gen java ThriftTest.thrift`，生成文件thrift\test\ThriftTest.java和User.java，编写getUser接口的业务实现类TestHandler.java。
 
-<b><i>`TestHandler.java`：
+<b><i>`[TestHandler.java]`</i></b>：
 ```java
 @Component //由spring容器实例化管理等
 public class TestHandler implements ThriftTest.Iface {
