@@ -44,14 +44,14 @@ public class TestHandler implements ThriftTest.Iface {
 
 <b><i>3</i></b> 编写服务端TestServer.java和spring-config-server.xml。启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），运行`TestServer.java`，看到日志`Starting the server on port 9090...`代表server启动成功。
 
-<b><i>[TestServer.java]</i></b>
+<i>[TestServer.java]</i>
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-server.xml");
 }
 ```
 
-<b><i>[spring-config-server.xml]</i></b>
+<i>[spring-config-server.xml]</i>
 ```xml
 <context:component-scan base-package="com.halloffame.thriftjsoa"/> 
     
@@ -69,14 +69,14 @@ public static void main(String[] args) throws Exception {
 
 <b><i>4</i></b> 编写代理端TestProxy.java和spring-config-proxy.xml。运行`TestProxy.java`，看到日志`Starting the proxy on port 4567...`代表proxy启动成功。
 
-<b><i>[TestProxy.java]</i></b>
+<i>[TestProxy.java]</i>
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-proxy.xml");
 }
 ```
 
-<b><i>[spring-config-proxy.xml]</i></b>
+<i>[spring-config-proxy.xml]</i>
 ```xml
 <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
@@ -86,7 +86,7 @@ public static void main(String[] args) throws Exception {
 
 <b><i>5</i></b> 编写客户端TestClient.java和spring-config-client.xml（客户端不限语言，这里使用java）。运行`TestClient.java`，日志打印`名字：另外一个烟火`，结果符合预期。
 
-<b><i>[TestClient.java]</i></b>
+<i>[TestClient.java]</i>
 ```java
 public static final AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-client.xml");
 	
@@ -103,7 +103,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-<b><i>[spring-config-client.xml]</i></b>
+<i>[spring-config-client.xml]</i>
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
