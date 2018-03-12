@@ -99,7 +99,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-`spring-config-client.xml`：
+<b>`spring-config-client.xml`</b>：
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
@@ -124,3 +124,6 @@ public static void main(String [] args) throws Exception {
 
 <b><i>4</i></b> 启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），运行`TestServer.java`，看到日志`Starting the server on port 9090...`代表server启动成功，然后运行`TestProxy.java`，看到日志`Starting the proxy on port 4567...`代表proxy启动成功，运行`TestClient.java`，日志打印`名字：另外一个烟火`，结果符合预期。
 
+<b>二 例子中使用spring来实例化ThirftJsoaServer，ThirftJsoaProxy，testClient等，也可以不用spirng直接new一个</b>
+
+<b>三 server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等，持续完善中。</b>
