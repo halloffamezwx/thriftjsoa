@@ -6,7 +6,7 @@ thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现�
 
 <b><i>1</i></b> 编写接口定义文件ThriftTest.thrift，定义了一个接口getUser。
 
-`ThriftTest.thrift`：
+<b><i>`ThriftTest.thrift`：
 ```java
 namespace java thrift.test
 
@@ -24,7 +24,7 @@ service ThriftTest
 
 <b><i>2</i></b> 使用tools目录的`thrift.exe`执行命令`thrift --gen java ThriftTest.thrift`，生成文件thrift\test\ThriftTest.java和User.java，编写getUser接口的业务实现类TestHandler.java。
 
-`TestHandler.java`：
+<b><i>`TestHandler.java`：
 ```java
 @Component //由spring容器实例化管理等
 public class TestHandler implements ThriftTest.Iface {
@@ -44,14 +44,14 @@ public class TestHandler implements ThriftTest.Iface {
 
 <b><i>3</i></b> 编写服务端TestServer.java和spring-config-server.xml，代理端TestProxy.java和spring-config-proxy.xml，客户端TestClient.java和spring-config-client.xml。
 
-`TestServer.java`：
+<b><i>`[TestServer.java]`</i></b>：
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-server.xml");
 }
 ```
 
-`spring-config-server.xml`：
+<b><i>`[spring-config-server.xml]`</i></b>：
 ```xml
 <context:component-scan base-package="com.halloffame.thriftjsoa"/> 
     
@@ -67,14 +67,14 @@ public static void main(String[] args) throws Exception {
 </bean>
 ```
 
-`TestProxy.java`：
+<b><i>`[TestProxy.java]`</i></b>：
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-proxy.xml");
 }
 ```
 
-`spring-config-proxy.xml`：
+<b><i>`[spring-config-proxy.xml]`</i></b>：
 ```xml
 <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
@@ -82,7 +82,7 @@ public static void main(String[] args) throws Exception {
 </bean>
 ```
 
-`TestClient.java`：
+<b><i>`[TestClient.java]`</i></b>：
 ```java
 public static final AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-client.xml");
 	
@@ -99,7 +99,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-<b><i>`spring-config-client.xml`</i></b>：
+<b><i>`[spring-config-client.xml]`</i></b>：
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
