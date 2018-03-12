@@ -126,7 +126,8 @@ public static void main(String [] args) throws Exception {
 </bean>
 ```
 
-<b>二 工程目录的主要结构：</b></br>
+<b>二 工程目录的主要结构：</b>
+
 |-thriftjsoa</br>
 &nbsp;&nbsp;&nbsp;|-src/main/java：实现源码目录</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-com.halloffame.thriftjsoa</br>
