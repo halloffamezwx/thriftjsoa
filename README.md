@@ -141,9 +141,9 @@ public static void main(String [] args) throws Exception {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.test：由ThriftTest.thrift生成的代码</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.java</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-User.java</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-client.xml：客户端的spring配置文件</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-proxy.xml：代理端的spring配置文件</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-server.xml：服务端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-client.xml：测试客户端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-proxy.xml：测试代理端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-server.xml：测试服务端的spring配置文件</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.thrift：接口定义文件</br>
 &nbsp;&nbsp;&nbsp;|-pom.xml：依赖的库文件</br>
 &nbsp;&nbsp;&nbsp;|-tools</br>
