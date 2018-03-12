@@ -96,9 +96,7 @@ public static void main(String [] args) throws Exception {
     //getUser就是ThriftTest.thrift所定义的接口
     User user = testClient.getUser(2); 
     System.out.println("名字："+ user.getName());
-    
-    //context.registerShutdownHook();
-    //context.close();
+
     testClient.getInputProtocol().getTransport().close();
 }
 ```
