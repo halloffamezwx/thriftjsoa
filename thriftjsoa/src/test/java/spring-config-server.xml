@@ -10,14 +10,14 @@
     <context:component-scan base-package="com.halloffame.thriftjsoa"/> 
     
     <bean id="testProcessor" class="thrift.test.ThriftTest.Processor">
-	    <constructor-arg name="iface" ref="testHandler"/>
+	    <constructor-arg name="iface" ref="testHandler"/> <!-- 业务实现类 -->
 	</bean>
     
     <bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.ThirftJsoaServer" init-method="run">
-	    <constructor-arg name="port" value="9090"/>
-	    <constructor-arg name="zkConnStr" value="localhost:2181"/>
-	    <constructor-arg name="ip" value="localhost"/>
-	    <constructor-arg name="tProcessor" ref="testProcessor"/>
+	    <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
+	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
+	    <constructor-arg name="ip" value="localhost"/> <!-- 向zk注册本服务的ip地址 -->
+	    <constructor-arg name="tProcessor" ref="testProcessor"/> <!-- 业务实现类的processor -->
 	</bean>
 
 </beans>
