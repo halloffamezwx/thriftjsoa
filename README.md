@@ -44,14 +44,14 @@ public class TestHandler implements ThriftTest.Iface {
 
 <b><i>3</i></b> 编写服务端TestServer.java和spring-config-server.xml。启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），运行`TestServer.java`，看到日志`Starting the server on port 9090...`代表server启动成功。
 
-<i>[TestServer.java]</i>
+[TestServer.java]
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-server.xml");
 }
 ```
 
-<i>[spring-config-server.xml]</i>
+[spring-config-server.xml]
 ```xml
 <context:component-scan base-package="com.halloffame.thriftjsoa"/> 
     
@@ -69,14 +69,14 @@ public static void main(String[] args) throws Exception {
 
 <b><i>4</i></b> 编写代理端TestProxy.java和spring-config-proxy.xml。运行`TestProxy.java`，看到日志`Starting the proxy on port 4567...`代表proxy启动成功。
 
-<i>[TestProxy.java]</i>
+[TestProxy.java]
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-proxy.xml");
 }
 ```
 
-<i>[spring-config-proxy.xml]</i>
+[spring-config-proxy.xml]
 ```xml
 <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
@@ -86,7 +86,7 @@ public static void main(String[] args) throws Exception {
 
 <b><i>5</i></b> 编写客户端TestClient.java和spring-config-client.xml（客户端不限语言，这里使用java）。运行`TestClient.java`，日志打印`名字：另外一个烟火`，结果符合预期。
 
-<i>[TestClient.java]</i>
+[TestClient.java]
 ```java
 public static final AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-client.xml");
 	
@@ -103,7 +103,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-<i>[spring-config-client.xml]</i>
+[spring-config-client.xml]
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
@@ -128,6 +128,6 @@ public static void main(String [] args) throws Exception {
 
 <b>二 工程目录的主要结构：</b>
 
-<b>三 后续计划：</b>
+<b>三 一些说明：</b>
 
-server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等。
+server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等。proxy里面的负载均衡算法目前只有最小连接数（加权），后续扩展一下。
