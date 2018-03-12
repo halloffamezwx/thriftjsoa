@@ -126,8 +126,28 @@ public static void main(String [] args) throws Exception {
 </bean>
 ```
 
-<b>二 工程目录的主要结构：</b>
+<b>二 工程目录的主要结构：</b></br>
+|-thriftjsoa</br>
+&nbsp;&nbsp;&nbsp;|-src/main/java：实现源码目录</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-com.halloffame.thriftjsoa</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ConnectionPoolFactory.java：连接池工厂类，给ThirftJsoaProxy使用</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThirftJsoaProxy.java：代理的实现类</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThirftJsoaServer.java：服务的实现类</br>
+&nbsp;&nbsp;&nbsp;|-src/test/java：测试例子</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-com.halloffame.thriftjsoa</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestClient.java：测试客户端</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestHandler.java：测试业务实现类，实现了ThriftTest.Iface接口</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestProxy.java：测试代理端</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestServer.java：测试服务端</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.test：由ThriftTest.thrift生成的代码</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.java</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-User.java</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-client.xml：客户端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-proxy.xml：代理端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-server.xml：服务端的spring配置文件</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.thrift：接口定义文件</br>
+&nbsp;&nbsp;&nbsp;|-pom.xml：依赖的库文件
 
-<b>三 一些说明：</b>
+<b>三 持续完善中：</b>
 
 server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等。proxy里面的负载均衡算法目前只有最小连接数（加权），后续扩展一下。
