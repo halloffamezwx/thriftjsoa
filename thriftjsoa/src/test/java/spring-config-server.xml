@@ -13,7 +13,7 @@
 	    <constructor-arg name="iface" ref="testHandler"/> <!-- 业务实现类 -->
 	</bean>
     
-    <bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.ThirftJsoaServer" init-method="run">
+    <bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.ThirftJsoaServer" init-method="run"> <!-- 实例化成功后运行ThirftJsoaServer的run方法 -->
 	    <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
 	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 	    <constructor-arg name="ip" value="localhost"/> <!-- 向zk注册本服务的ip地址 -->

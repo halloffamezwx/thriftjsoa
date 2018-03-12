@@ -12,7 +12,6 @@ import thrift.test.User;
  */
 @Component //由spring容器实例化管理等
 public class TestHandler implements ThriftTest.Iface {
-
 	@Override
 	public User getUser(int id) throws TException {
 		System.out.println("id==>" + id); 
@@ -24,5 +23,4 @@ public class TestHandler implements ThriftTest.Iface {
 		}
 		return null;
 	}
-
 }
