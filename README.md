@@ -2,11 +2,13 @@ thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现�
 
 ![image](https://github.com/halloffamezwx/thriftjsoa/raw/master/doc/framework.png)
 
-<b>一 使用方式</b>（请参考test目录下的例子）：
+<b>一 使用方式：</b>
+
+请参考test目录下的例子，例子中使用spring来实例化ThirftJsoaServer，ThirftJsoaProxy，testClient等，也可以不用spirng直接用new来实例化对象。
 
 <b><i>1</i></b> 编写接口定义文件ThriftTest.thrift，定义了一个接口getUser。
 
-<b><i>`ThriftTest.thrift`：
+<b><i>`[ThriftTest.thrift]`：</i></b>
 ```java
 namespace java thrift.test
 
@@ -24,7 +26,7 @@ service ThriftTest
 
 <b><i>2</i></b> 使用tools目录的`thrift.exe`执行命令`thrift --gen java ThriftTest.thrift`，生成文件thrift\test\ThriftTest.java和User.java，编写getUser接口的业务实现类TestHandler.java。
 
-<b><i>`[TestHandler.java]`</i></b>：
+<b><i>`[TestHandler.java]`：</i></b>
 ```java
 @Component //由spring容器实例化管理等
 public class TestHandler implements ThriftTest.Iface {
@@ -42,9 +44,9 @@ public class TestHandler implements ThriftTest.Iface {
 }
 ```
 
-<b><i>3</i></b> 编写服务端TestServer.java和spring-config-server.xml，代理端TestProxy.java和spring-config-proxy.xml，客户端TestClient.java和spring-config-client.xml。
+<b><i>3</i></b> 编写服务端TestServer.java和spring-config-server.xml。启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），运行`TestServer.java`，看到日志`Starting the server on port 9090...`代表server启动成功。
 
-<b><i>`[TestServer.java]`</i></b>：
+<b><i>`[TestServer.java]`：</i></b>
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-server.xml");
@@ -67,20 +69,24 @@ public static void main(String[] args) throws Exception {
 </bean>
 ```
 
-<b><i>`[TestProxy.java]`</i></b>：
+<b><i>4</i></b> 编写代理端TestProxy.java和spring-config-proxy.xml。运行`TestProxy.java`，看到日志`Starting the proxy on port 4567...`代表proxy启动成功。
+
+<b><i>`[TestProxy.java]`：</i></b>
 ```java
 public static void main(String[] args) throws Exception {
     AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-proxy.xml");
 }
 ```
 
-<b><i>`[spring-config-proxy.xml]`</i></b>：
+<b><i>`[spring-config-proxy.xml]`：</i></b>
 ```xml
 <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
     <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 </bean>
 ```
+
+<b><i>5</i></b> 编写客户端TestClient.java和spring-config-client.xml（客户端不限语言，这里使用java）。运行`TestClient.java`，日志打印`名字：另外一个烟火`，结果符合预期。
 
 <b><i>`[TestClient.java]`</i></b>：
 ```java
@@ -99,7 +105,7 @@ public static void main(String [] args) throws Exception {
 }
 ```
 
-<b><i>`[spring-config-client.xml]`</i></b>：
+<b><i>`[spring-config-client.xml]`：</i></b>
 ```xml
 <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
     <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
@@ -122,8 +128,8 @@ public static void main(String [] args) throws Exception {
 </bean>
 ```
 
-<b><i>4</i></b> 启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），运行`TestServer.java`，看到日志`Starting the server on port 9090...`代表server启动成功，然后运行`TestProxy.java`，看到日志`Starting the proxy on port 4567...`代表proxy启动成功，运行`TestClient.java`，日志打印`名字：另外一个烟火`，结果符合预期。
+<b>二 工程目录的主要结构：</b>
 
-<b>二 例子中使用spring来实例化ThirftJsoaServer，ThirftJsoaProxy，testClient等，也可以不用spirng直接new一个</b>
+<b>三 后续计划：</b>
 
-<b>三 server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等，持续完善中。</b>
+server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等。
