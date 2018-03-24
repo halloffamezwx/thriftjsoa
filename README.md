@@ -126,6 +126,10 @@ public static void main(String [] args) throws Exception {
 
 <b>二 工程目录的主要结构：</b>
 
+|-tools</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.exe：用这个来执行ThriftTest.thrift生成接口代码等</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ZooInspector.zip：zk的一个客户端工具</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-zookeeper-3.4.10.tar.gz：zk的安装文件，解压即可</br>
 |-thriftjsoa</br>
 &nbsp;&nbsp;&nbsp;|-src/main/java：实现源码目录</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-com.halloffame.thriftjsoa</br>
@@ -146,10 +150,6 @@ public static void main(String [] args) throws Exception {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-spring-config-server.xml：测试服务端的spring配置文件</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.thrift：接口定义文件</br>
 &nbsp;&nbsp;&nbsp;|-pom.xml：依赖的库文件</br>
-&nbsp;&nbsp;&nbsp;|-tools</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.exe：用这个来执行ThriftTest.thrift生成接口代码等</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ZooInspector.zip：zk的一个客户端工具</br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-zookeeper-3.4.10.tar.gz：zk的安装文件，解压即可</br>
 &nbsp;&nbsp;&nbsp;|-LICENSE：MIT协议
 
 <b>三 持续完善中：</b>
