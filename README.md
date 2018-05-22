@@ -172,4 +172,4 @@ public static void main(String [] args) throws Exception {
 
 server和proxy端的thrift的传输方式写死为TFastFramedTransport，传输协议写死为TCompactProtocol，服务模式写死为TThreadedSelectorServer，后续改成可配置的，包括proxy的连接池的一些配置等。proxy里面的负载均衡算法目前只有最小连接数（加权），后续扩展一下。
 
-<b>四 如果你觉得对你有所启发，star一下。</b>
+<b>四 如果你觉得对你有所启发，star一下，谢谢。</b>
