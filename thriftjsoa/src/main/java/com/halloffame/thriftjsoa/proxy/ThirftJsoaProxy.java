@@ -1,4 +1,4 @@
-package com.halloffame.thriftjsoa;
+package com.halloffame.thriftjsoa.proxy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,10 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
+
+import com.halloffame.thriftjsoa.server.ServerConfig;
+import com.halloffame.thriftjsoa.util.JsonUtil;
 
 public class ThirftJsoaProxy {
 	private List<ConnectionPoolFactory> poolFactorys = new ArrayList<ConnectionPoolFactory>();
@@ -33,9 +37,14 @@ public class ThirftJsoaProxy {
 	private int port = 4567;
 	private String zkRootPath = "/thriftJsoaServer";
 	
-	public ThirftJsoaProxy(int port, String zkConnStr) throws Exception {
-		this.port = port;
-		this.zk(zkConnStr);
+	public ThirftJsoaProxy(int port, String zkConnStr, String zkRootPath, int zkSessionTimeout) throws Exception {
+		if (port > 0) {
+			this.port = port;
+		}
+		if (zkRootPath != null && !"".equals(zkRootPath.trim())) {
+			this.zkRootPath = zkRootPath;
+		}
+		this.zk(zkConnStr, zkSessionTimeout);
 	}
 	
 	public void run() throws Exception {
@@ -57,12 +66,15 @@ public class ThirftJsoaProxy {
         serverEngine.serve();
 	}
 	
-	private void zk(String zkConnStr) throws Exception {
+	private void zk(String zkConnStr, int zkSessionTimeout) throws Exception {
 		if ( zkConnStr == null || "".equals(zkConnStr.trim()) ) {
 			zkConnStr = "localhost:2181";
 		}
+		if (zkSessionTimeout <= 0) {
+			zkSessionTimeout = 5000;
+		}
 		MyWatcher myWatcher = new MyWatcher();
-		zk = new ZooKeeper(zkConnStr, 5000, myWatcher); 
+		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, myWatcher); 
 		
 		List<String> servers = zk.getChildren(zkRootPath, true);
 		System.out.println("zk-servers=" + servers);
@@ -71,18 +83,28 @@ public class ThirftJsoaProxy {
 		}
 	}
 	
-	private void addServer(String server) {
+	private void addServer(String server) throws Exception {
 		String[] serverArr = server.split(":");
-		String ip = serverArr[0];
+		String host = serverArr[0];
 		int port = Integer.parseInt(serverArr[1]);
 		
-		GenericObjectPoolConfig config = new GenericObjectPoolConfig();
-	    //链接池中最大连接数，默认为8
-        config.setMaxTotal(30); 
-        //当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位：毫秒；默认为-1，表示永不超时
-        config.setMaxWaitMillis(3000);
-        
-        ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(config, ip, port); 
+		Stat stat = new Stat();
+		byte[] serverConfigData = zk.getData(zkRootPath + "/" + server, false, stat);
+		String serverConfigStr = new String(serverConfigData, "UTF-8");
+		
+		ServerConfig serverConfig = JsonUtil.deserialize(serverConfigStr, ServerConfig.class);
+		GenericObjectPoolConfig config = null;
+		if (serverConfig != null && serverConfig.getGenericObjectPoolConfig() != null) {
+			config = serverConfig.getGenericObjectPoolConfig();
+		} else {
+			config = new GenericObjectPoolConfig();
+		}
+		int socketTimeout = serverConfig.getSocketTimeout();
+		if (socketTimeout <= 0) {
+			socketTimeout = 3000;
+		}
+		
+        ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(config, host, port, socketTimeout); 
         poolFactorys.add(poolFactory);
 	}
 	

@@ -1,5 +1,6 @@
-package com.halloffame.thriftjsoa;
+package com.halloffame.thriftjsoa.server;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -13,30 +14,56 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
+import com.halloffame.thriftjsoa.util.JsonUtil;
+
 public class ThirftJsoaServer {
-	private String host = "localhost";
 	private int port = 9090;
 	private ZooKeeper zk;
-	private String zkRootPath = "/thriftJsoaServer";
-	private TProcessor tProcessor = null;
+	private TProcessor tProcessor;
 	
-	public ThirftJsoaServer(int port, String zkConnStr, String host, TProcessor tProcessor) throws Exception {
-		this.port = port;
-		this.host = host;
+	public ThirftJsoaServer(int port, String zkConnStr, String host, String zkRootPath, 
+			int zkSessionTimeout, TProcessor tProcessor, ServerConfig serverConfig) throws Exception {
 		this.tProcessor = tProcessor;
-		this.zk(zkConnStr);
+		if (port > 0) {
+			this.port = port;
+		} 
+		
+		if (serverConfig == null) {
+			serverConfig = new ServerConfig();
+		}
+		if (serverConfig.getGenericObjectPoolConfig() == null) {
+			serverConfig.setGenericObjectPoolConfig(new GenericObjectPoolConfig());
+		}
+		if (serverConfig.getSocketTimeout() <= 0) {
+			serverConfig.setSocketTimeout(3000); 
+		}
+		
+		this.zk(host, zkConnStr, zkRootPath, zkSessionTimeout, serverConfig);
 	}
 	
-	private void zk(String zkConnStr) throws Exception {
+	private void zk(String host, String zkConnStr, String zkRootPath, 
+			int zkSessionTimeout, ServerConfig serverConfig) throws Exception {
+		if ( zkConnStr == null || "".equals(zkConnStr.trim()) ) {
+			zkConnStr = "localhost:2181";
+		}
+		if ( zkRootPath == null || "".equals(zkRootPath.trim()) ) {
+			zkRootPath = "/thriftJsoaServer";
+		}
+		if (zkSessionTimeout <= 0) {
+			zkSessionTimeout = 5000;
+		}
+		if (host == null || "".equals(host.trim())) {
+			host = "localhost";
+		}
 		//创建一个与ZooKeeper服务器的连接
-		zk = new ZooKeeper(zkConnStr, 5000, null); 
+		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, null); 
 		Stat stat = zk.exists(zkRootPath, false);
 		if (stat == null) { //不存在就创建根节点
             zk.create(zkRootPath, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT); 
         }
 		//创建一个子节点
-		zk.create(zkRootPath + "/" + host + ":" + port, "someData".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-	}
+		zk.create(zkRootPath + "/" + host + ":" + port, JsonUtil.serialize(serverConfig).getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+	} 
 	
 	public void run() throws Exception {
         TProtocolFactory tProtocolFactory = new TCompactProtocol.Factory(); //通信协议

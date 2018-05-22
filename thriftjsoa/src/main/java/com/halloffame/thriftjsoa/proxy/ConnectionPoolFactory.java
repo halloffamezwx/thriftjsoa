@@ -1,4 +1,4 @@
-package com.halloffame.thriftjsoa;
+package com.halloffame.thriftjsoa.proxy;
 
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
@@ -13,9 +13,9 @@ public class ConnectionPoolFactory {
     private GenericObjectPool<TTransport> pool;  
     private String hostStr;
   
-    public ConnectionPoolFactory(GenericObjectPoolConfig config, String ip, int port) {  
-    	hostStr = ip + ":" + port;
-    	ConnectionFactory objFactory = new ConnectionFactory(ip, port, 3000);  
+    public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, int socketTimeout) {  
+    	hostStr = host + ":" + port;
+    	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout);  
         pool = new GenericObjectPool<TTransport>(objFactory, config);  
     }
     
@@ -58,12 +58,12 @@ public class ConnectionPoolFactory {
      * 创建Transport对象并放进pool里进行管理等操作。
      */
     class ConnectionFactory extends BasePooledObjectFactory<TTransport> {   
-    	private String ip;  
+    	private String host;  
         private int port;
         private int socketTimeout;
           
-        public ConnectionFactory(String ip, int port, int socketTimeout) {  
-        	this.ip = ip;
+        public ConnectionFactory(String host, int port, int socketTimeout) {  
+        	this.host = host;
         	this.port = port;
         	this.socketTimeout = socketTimeout;
         }  
@@ -71,7 +71,7 @@ public class ConnectionPoolFactory {
         //创建TTransport类型对象方法
         @Override
 		public TTransport create() throws Exception {
-			TSocket socket = new TSocket(ip, port);
+			TSocket socket = new TSocket(host, port);
 	        socket.setTimeout(socketTimeout);
 	        TTransport transport = socket;
 	        transport = new TFastFramedTransport(transport);
