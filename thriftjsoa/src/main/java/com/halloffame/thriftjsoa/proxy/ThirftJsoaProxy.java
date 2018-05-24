@@ -34,20 +34,33 @@ import com.halloffame.thriftjsoa.util.JsonUtil;
 public class ThirftJsoaProxy {
 	private List<ConnectionPoolFactory> poolFactorys = new ArrayList<ConnectionPoolFactory>();
 	private ZooKeeper zk;
-	private int port = 4567;
-	private String zkRootPath = "/thriftJsoaServer";
+	private int port;
+	private String zkConnStr;
 	
-	public ThirftJsoaProxy(int port, String zkConnStr, String zkRootPath, int zkSessionTimeout) throws Exception {
-		if (port > 0) {
-			this.port = port;
-		}
-		if (zkRootPath != null && !"".equals(zkRootPath.trim())) {
-			this.zkRootPath = zkRootPath;
-		}
-		this.zk(zkConnStr, zkSessionTimeout);
+	private String zkRootPath = "/thriftJsoaServer";
+	private int zkSessionTimeout = 5000;
+	
+	public String getZkRootPath() {
+		return zkRootPath;
+	}
+	public void setZkRootPath(String zkRootPath) {
+		this.zkRootPath = zkRootPath;
+	}
+	public int getZkSessionTimeout() {
+		return zkSessionTimeout;
+	}
+	public void setZkSessionTimeout(int zkSessionTimeout) {
+		this.zkSessionTimeout = zkSessionTimeout;
+	}
+
+	public ThirftJsoaProxy(int port, String zkConnStr) throws Exception {
+		this.port = port;
+		this.zkConnStr = zkConnStr;
 	}
 	
 	public void run() throws Exception {
+		this.zk();
+		
 		ProxyProcessor proxyProcessor = new ProxyProcessor(); //自定义的一个processor，非生成代码	
         TProtocolFactory tProtocolFactory = new TCompactProtocol.Factory();  //通信协议
         TTransportFactory tTransportFactory = new TFastFramedTransport.Factory(); //通信方式
@@ -66,13 +79,7 @@ public class ThirftJsoaProxy {
         serverEngine.serve();
 	}
 	
-	private void zk(String zkConnStr, int zkSessionTimeout) throws Exception {
-		if ( zkConnStr == null || "".equals(zkConnStr.trim()) ) {
-			zkConnStr = "localhost:2181";
-		}
-		if (zkSessionTimeout <= 0) {
-			zkSessionTimeout = 5000;
-		}
+	private void zk() throws Exception {
 		MyWatcher myWatcher = new MyWatcher();
 		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, myWatcher); 
 		
@@ -99,9 +106,9 @@ public class ThirftJsoaProxy {
 		} else {
 			config = new GenericObjectPoolConfig();
 		}
-		int socketTimeout = serverConfig.getSocketTimeout();
-		if (socketTimeout <= 0) {
-			socketTimeout = 3000;
+		int socketTimeout = 3000;
+		if (serverConfig != null && serverConfig.getSocketTimeout() > 0) {
+			socketTimeout = serverConfig.getSocketTimeout();
 		}
 		
         ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(config, host, port, socketTimeout); 

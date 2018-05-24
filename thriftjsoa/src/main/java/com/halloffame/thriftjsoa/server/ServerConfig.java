@@ -3,9 +3,9 @@ package com.halloffame.thriftjsoa.server;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 public class ServerConfig {
-	private GenericObjectPoolConfig genericObjectPoolConfig;
-	private int socketTimeout;
-
+	private GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
+	private int socketTimeout = 3000;
+	
 	public int getSocketTimeout() {
 		return socketTimeout;
 	}

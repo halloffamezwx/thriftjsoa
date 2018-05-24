@@ -10,8 +10,9 @@
     <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.proxy.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
 	    <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
 	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
-	    <constructor-arg name="zkRootPath" value="/thriftJsoaServer"/>
-	    <constructor-arg name="zkSessionTimeout" value="5000"/>
+	    
+	    <property name="zkRootPath" value="/thriftJsoaServer"/>
+	    <property name="zkSessionTimeout" value="5000"/>
 	</bean>
 
 </beans>

@@ -28,10 +28,11 @@
 	    <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
 	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 	    <constructor-arg name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
-	    <constructor-arg name="zkRootPath" value="/thriftJsoaServer"/>
-	    <constructor-arg name="zkSessionTimeout" value="5000"/>
 	    <constructor-arg name="tProcessor" ref="testProcessor"/> <!-- 业务实现类的processor -->
-	    <constructor-arg name="serverConfig" ref="serverConfig"/>
+	    
+	    <property name="zkRootPath" value="/thriftJsoaServer"/>
+	    <property name="zkSessionTimeout" value="5000"/>
+	    <property name="serverConfig" ref="serverConfig"/>
 	</bean>
 
 </beans>
