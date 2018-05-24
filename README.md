@@ -59,25 +59,11 @@ public static void main(String[] args) throws Exception {
     <constructor-arg name="iface" ref="testHandler"/> <!-- 业务实现类 -->
 </bean>
 
-<bean id="genericObjectPoolConfig" class="org.apache.commons.pool2.impl.GenericObjectPoolConfig">
-    <property name="maxTotal" value="30"/> <!-- 链接池中最大连接数，默认为8 -->
-    <property name="maxIdle" value="30"/> <!--  链接池中最大空闲的连接数,默认为8 -->
-    <property name="maxWaitMillis" value="3000"/> <!-- 当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位：毫秒；默认为-1，表示永不超时 -->
-</bean>
-
-<bean id="serverConfig" class="com.halloffame.thriftjsoa.server.ServerConfig">
-    <property name="genericObjectPoolConfig" ref="genericObjectPoolConfig"/>
-    <property name="socketTimeout" value="3000"/>
-</bean>
-
 <bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.server.ThirftJsoaServer" init-method="run"> <!-- 实例化成功后运行ThirftJsoaServer的run方法 -->
     <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
     <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
     <constructor-arg name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
-    <constructor-arg name="zkRootPath" value="/thriftJsoaServer"/>
-    <constructor-arg name="zkSessionTimeout" value="5000"/>
     <constructor-arg name="tProcessor" ref="testProcessor"/> <!-- 业务实现类的processor -->
-    <constructor-arg name="serverConfig" ref="serverConfig"/>
 </bean>
 ```
 
@@ -95,8 +81,6 @@ public static void main(String[] args) throws Exception {
 <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.proxy.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
     <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
-    <constructor-arg name="zkRootPath" value="/thriftJsoaServer"/>
-    <constructor-arg name="zkSessionTimeout" value="5000"/>
 </bean>
 ```
 
