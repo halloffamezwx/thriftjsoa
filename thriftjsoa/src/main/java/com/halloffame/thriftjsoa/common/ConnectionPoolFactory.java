@@ -1,11 +1,13 @@
-package com.halloffame.thriftjsoa.proxy;
+package com.halloffame.thriftjsoa.common;
 
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig; 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.transport.TFastFramedTransport;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport; 
   
@@ -13,9 +15,10 @@ public class ConnectionPoolFactory {
     private GenericObjectPool<TTransport> pool;  
     private String hostStr;
   
-    public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, int socketTimeout) {  
+    public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, 
+    		int socketTimeout, boolean ssl, String transportType) {  
     	hostStr = host + ":" + port;
-    	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout);  
+    	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout, ssl, transportType);  
         pool = new GenericObjectPool<TTransport>(objFactory, config);  
     }
     
@@ -61,20 +64,37 @@ public class ConnectionPoolFactory {
     	private String host;  
         private int port;
         private int socketTimeout;
+        private String transportType; 
+        private boolean ssl;
           
-        public ConnectionFactory(String host, int port, int socketTimeout) {  
+        public ConnectionFactory(String host, int port, int socketTimeout, boolean ssl, String transportType) {  
         	this.host = host;
         	this.port = port;
         	this.socketTimeout = socketTimeout;
+        	this.ssl = ssl;
+        	this.transportType = transportType;
         }  
         
         //创建TTransport类型对象方法
         @Override
 		public TTransport create() throws Exception {
-			TSocket socket = new TSocket(host, port);
+        	TTransport transport = null;
+        	TSocket socket = null;
+	        if (ssl == true) {
+	            socket = TSSLTransportFactory.getClientSocket(host, port, 0);
+	        } else {
+	            socket = new TSocket(host, port);
+	        }
 	        socket.setTimeout(socketTimeout);
-	        TTransport transport = socket;
-	        transport = new TFastFramedTransport(transport);
+	        
+	        transport = socket;
+	        if (transportType.equals("buffered")) {
+	        } else if (transportType.equals("framed")) {
+	            transport = new TFramedTransport(transport);
+	        } else if (transportType.equals("fastframed")) {
+	            transport = new TFastFramedTransport(transport);
+	        }
+	        
 	        if ( !transport.isOpen() ) {
 	        	transport.open();
 	        }

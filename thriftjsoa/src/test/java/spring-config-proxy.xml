@@ -7,12 +7,22 @@
         http://www.springframework.org/schema/context  
         http://www.springframework.org/schema/context/spring-context.xsd">
  
-    <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.proxy.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
+    <bean id="proxyServerConfig" class="com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig">
+        <property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
+        <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default) -->
+        <property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
+        <property name="selectorThreads" value="2"/> 
+        <property name="workerThreads" value="5"/> 
+        <property name="acceptQueueSizePerThread" value="4"/>
+    </bean>
+        
+    <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
 	    <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
 	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 	    
-	    <property name="zkRootPath" value="/thriftJsoaServer"/>
-	    <property name="zkSessionTimeout" value="5000"/>
+	    <property name="zkRootPath" value="/thriftJsoaServer"/> <!-- zk根路径，用于取得该路径下注册的所有服务的信息，默认/thriftJsoaServer -->
+	    <property name="zkSessionTimeout" value="5000"/> <!-- zk会话的有效时间，单位是毫秒，默认5000 -->
+	    <property name="proxyServerConfig" ref="proxyServerConfig"/> <!-- 代理服务的一些配置，默认ThreadedSelectorServerConfig -->
 	</bean>
 
 </beans>

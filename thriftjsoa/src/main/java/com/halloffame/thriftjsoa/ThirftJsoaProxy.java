@@ -1,44 +1,51 @@
-package com.halloffame.thriftjsoa.proxy;
+package com.halloffame.thriftjsoa;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
+import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TField;
+import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
-import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadedSelectorServer;
-import org.apache.thrift.transport.TFastFramedTransport;
-import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
-import com.halloffame.thriftjsoa.server.ServerConfig;
+import com.halloffame.thriftjsoa.common.CommonServer;
+import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
+import com.halloffame.thriftjsoa.config.BaseServerConfig;
+import com.halloffame.thriftjsoa.config.ServerZkConfig;
+import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 
 public class ThirftJsoaProxy {
+	//连接池list，每个服务对应一个连接池
 	private List<ConnectionPoolFactory> poolFactorys = new ArrayList<ConnectionPoolFactory>();
-	private ZooKeeper zk;
-	private int port;
-	private String zkConnStr;
+	//每个服务对应的配置map<host + ":" + port, serverConfig>
+	private Map<String, BaseServerConfig> serverConfigMap = new HashMap<>();
 	
-	private String zkRootPath = "/thriftJsoaServer";
-	private int zkSessionTimeout = 5000;
+	private ZooKeeper zk;
+	private int port; //代理服务端口
+	private String zkConnStr; //zk连接串
+	
+	private String zkRootPath = "/thriftJsoaServer"; //zk根路径，用于取得该路径下注册的所有服务的信息
+	private int zkSessionTimeout = 5000; //zk会话的有效时间，单位是毫秒
+	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理服务的一些配置
 	
 	public String getZkRootPath() {
 		return zkRootPath;
@@ -52,7 +59,13 @@ public class ThirftJsoaProxy {
 	public void setZkSessionTimeout(int zkSessionTimeout) {
 		this.zkSessionTimeout = zkSessionTimeout;
 	}
-
+	public BaseServerConfig getProxyServerConfig() {
+		return proxyServerConfig;
+	}
+	public void setProxyServerConfig(BaseServerConfig proxyServerConfig) {
+		this.proxyServerConfig = proxyServerConfig;
+	}
+	
 	public ThirftJsoaProxy(int port, String zkConnStr) throws Exception {
 		this.port = port;
 		this.zkConnStr = zkConnStr;
@@ -62,21 +75,8 @@ public class ThirftJsoaProxy {
 		this.zk();
 		
 		ProxyProcessor proxyProcessor = new ProxyProcessor(); //自定义的一个processor，非生成代码	
-        TProtocolFactory tProtocolFactory = new TCompactProtocol.Factory();  //通信协议
-        TTransportFactory tTransportFactory = new TFastFramedTransport.Factory(); //通信方式
-
-    	TNonblockingServerSocket tNonblockingServerSocket =
-    			new TNonblockingServerSocket(new TNonblockingServerSocket.NonblockingAbstractServerSocketArgs().port(port));
-    	
-    	TThreadedSelectorServer.Args tThreadedSelectorServerArgs
-          	= new TThreadedSelectorServer.Args(tNonblockingServerSocket);
-    	tThreadedSelectorServerArgs.processor(proxyProcessor);
-    	tThreadedSelectorServerArgs.protocolFactory(tProtocolFactory);
-    	tThreadedSelectorServerArgs.transportFactory(tTransportFactory);
-    		
-    	TServer serverEngine = new TThreadedSelectorServer(tThreadedSelectorServerArgs); //服务器模式
         System.out.println("Starting the proxy on port " + port + "...");
-        serverEngine.serve();
+        CommonServer.serve(port, proxyServerConfig, proxyProcessor);
 	}
 	
 	private void zk() throws Exception {
@@ -86,7 +86,7 @@ public class ThirftJsoaProxy {
 		List<String> servers = zk.getChildren(zkRootPath, true);
 		System.out.println("zk-servers=" + servers);
 		for (String server : servers) {
-			addServer(server);
+			addServer(server); //新增服务
 		}
 	}
 	
@@ -96,23 +96,21 @@ public class ThirftJsoaProxy {
 		int port = Integer.parseInt(serverArr[1]);
 		
 		Stat stat = new Stat();
-		byte[] serverConfigData = zk.getData(zkRootPath + "/" + server, false, stat);
-		String serverConfigStr = new String(serverConfigData, "UTF-8");
+		byte[] serverZkConfigData = zk.getData(zkRootPath + "/" + server, false, stat);
+		String serverZkConfigStr = new String(serverZkConfigData, "UTF-8");
 		
-		ServerConfig serverConfig = JsonUtil.deserialize(serverConfigStr, ServerConfig.class);
-		GenericObjectPoolConfig config = null;
-		if (serverConfig != null && serverConfig.getGenericObjectPoolConfig() != null) {
-			config = serverConfig.getGenericObjectPoolConfig();
-		} else {
-			config = new GenericObjectPoolConfig();
-		}
-		int socketTimeout = 3000;
-		if (serverConfig != null && serverConfig.getSocketTimeout() > 0) {
-			socketTimeout = serverConfig.getSocketTimeout();
-		}
+		ServerZkConfig serverZkConfig = JsonUtil.deserialize(serverZkConfigStr, ServerZkConfig.class);
+		GenericObjectPoolConfig poolConfig = serverZkConfig.getPoolConfig();
+		int socketTimeout = serverZkConfig.getSocketTimeout();
 		
-        ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(config, host, port, socketTimeout); 
+		BaseServerConfig serverConfig = serverZkConfig.getServerConfig();
+		boolean ssl = serverConfig.isSsl();
+		String transportType = serverConfig.getTransportType();
+		
+        ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(poolConfig, host, port, 
+        		socketTimeout, ssl, transportType);
         poolFactorys.add(poolFactory);
+        serverConfigMap.put(host + ":" + port, serverConfig);
 	}
 	
 	class MyWatcher implements Watcher {
@@ -149,6 +147,8 @@ public class ThirftJsoaProxy {
         				
         				if (!isFind) { //下线服务
         					System.out.println("下线" + poolFactory);
+        					serverConfigMap.remove(poolFactory.toString());
+        					
         					poolFactory.close();
         					poolFactorys.remove(i);
         					poolFactory = null;
@@ -162,7 +162,7 @@ public class ThirftJsoaProxy {
 		
 	}
 	
-	//最小连接数（加权）
+	//负载均衡：最小连接数（加权）
 	private ConnectionPoolFactory getLeastConnPoolFactory() {
 		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(0);
 		double selectWeight = selectPoolFactory.getWeight();
@@ -190,11 +190,23 @@ public class ThirftJsoaProxy {
 			TTransport transport = null;
 			
 			try {
+				TMessage msg = in.readMessageBegin();
+				
 				poolFactory = getLeastConnPoolFactory(); //取得最小连接数（加权）的服务
 				transport = poolFactory.getConnection(); 
-				TProtocol tProtocol = new TCompactProtocol(transport);
 				
-				TMessage msg = in.readMessageBegin();
+				BaseServerConfig serverConfig = serverConfigMap.get(poolFactory.toString());
+				String protocolType = serverConfig.getProtocolType();
+				
+				TProtocol tProtocol = null; //指定的通信协议
+			    if (protocolType.equals("json")) {
+			        tProtocol = new TJSONProtocol(transport);
+			    } else if (protocolType.equals("compact")) {
+			        tProtocol = new TCompactProtocol(transport);
+			    } else {
+			        tProtocol = new TBinaryProtocol(transport);
+			    }
+				
 				tProtocol.writeMessageBegin(msg);
 
 				readWriteData(in, tProtocol);
@@ -211,6 +223,7 @@ public class ThirftJsoaProxy {
 				
 				if (msg.type == TMessageType.EXCEPTION) {
 				    TApplicationException x = TApplicationException.read(tProtocol);
+				    x.write(out); 
 				    tProtocol.readMessageEnd();
 				    out.writeMessageEnd();
 				    throw x;
@@ -241,10 +254,11 @@ public class ThirftJsoaProxy {
 			TField schemeField;
 			while (true) {
 				schemeField = in.readFieldBegin();
-				out.writeFieldBegin(schemeField);
+				
 				if (schemeField.type == TType.STOP) { 
-					out.writeFieldStop();
 					break;
+				} else {
+					out.writeFieldBegin(schemeField);
 				}
 				
 				switch (schemeField.type) {
@@ -308,6 +322,8 @@ public class ThirftJsoaProxy {
 				in.readFieldEnd();
 				out.writeFieldEnd();
 			}
+			out.writeFieldStop();
+			
 			in.readStructEnd();
 			out.writeStructEnd();
 		}	
