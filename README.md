@@ -153,6 +153,7 @@ public static void main(String [] args) throws Exception {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestHandler.java：测试业务实现类，实现了ThriftTest.Iface接口</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestProxy.java：测试代理端</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestServer.java：测试服务端</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-TestQpsClient.java：qps测试客户端</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-thrift.test：由ThriftTest.thrift生成的代码</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-ThriftTest.java</br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-User.java</br>
