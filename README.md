@@ -59,7 +59,7 @@ public static void main(String[] args) throws Exception {
     <constructor-arg name="iface" ref="testHandler"/> <!-- 业务实现类 -->
 </bean>
 
-<bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.server.ThirftJsoaServer" init-method="run"> <!-- 实例化成功后运行ThirftJsoaServer的run方法 -->
+<bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.ThirftJsoaServer" init-method="run"> <!-- 实例化成功后运行ThirftJsoaServer的run方法 -->
     <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
     <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
     <constructor-arg name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
@@ -78,7 +78,7 @@ public static void main(String[] args) throws Exception {
 
 [spring-config-proxy.xml]
 ```xml
-<bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.proxy.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
+<bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
     <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
     <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
 </bean>
