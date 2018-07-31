@@ -1,25 +1,19 @@
 package com.halloffame.thriftjsoa;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TField;
-import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
-import org.apache.thrift.transport.TTransport;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -37,7 +31,7 @@ public class ThirftJsoaProxy {
 	//连接池list，每个服务对应一个连接池
 	private List<ConnectionPoolFactory> poolFactorys = new ArrayList<ConnectionPoolFactory>();
 	//每个服务对应的配置map<host + ":" + port, serverConfig>
-	private Map<String, BaseServerConfig> serverConfigMap = new HashMap<>();
+	//private Map<String, BaseServerConfig> serverConfigMap = new HashMap<>();
 	
 	private ZooKeeper zk;
 	private int port; //代理服务端口
@@ -106,11 +100,12 @@ public class ThirftJsoaProxy {
 		BaseServerConfig serverConfig = serverZkConfig.getServerConfig();
 		boolean ssl = serverConfig.isSsl();
 		String transportType = serverConfig.getTransportType();
+		String protocolType = serverConfig.getProtocolType();
 		
         ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(poolConfig, host, port, 
-        		socketTimeout, ssl, transportType);
+        		socketTimeout, ssl, transportType, protocolType);
         poolFactorys.add(poolFactory);
-        serverConfigMap.put(host + ":" + port, serverConfig);
+        //serverConfigMap.put(host + ":" + port, serverConfig);
 	}
 	
 	class MyWatcher implements Watcher {
@@ -147,7 +142,7 @@ public class ThirftJsoaProxy {
         				
         				if (!isFind) { //下线服务
         					System.out.println("下线" + poolFactory);
-        					serverConfigMap.remove(poolFactory.toString());
+        					//serverConfigMap.remove(poolFactory.toString());
         					
         					poolFactory.close();
         					poolFactorys.remove(i);
@@ -187,25 +182,15 @@ public class ThirftJsoaProxy {
 		@Override
 		public boolean process(TProtocol in, TProtocol out) throws TException {
 			ConnectionPoolFactory poolFactory = null;
-			TTransport transport = null;
+			TProtocol tProtocol = null; //通信协议
 			
 			try {
 				TMessage msg = in.readMessageBegin();
 				
 				poolFactory = getLeastConnPoolFactory(); //取得最小连接数（加权）的服务
-				transport = poolFactory.getConnection(); 
+				tProtocol = poolFactory.getConnection(); 
 				
-				BaseServerConfig serverConfig = serverConfigMap.get(poolFactory.toString());
-				String protocolType = serverConfig.getProtocolType();
-				
-				TProtocol tProtocol = null; //指定的通信协议
-			    if (protocolType.equals("json")) {
-			        tProtocol = new TJSONProtocol(transport);
-			    } else if (protocolType.equals("compact")) {
-			        tProtocol = new TCompactProtocol(transport);
-			    } else {
-			        tProtocol = new TBinaryProtocol(transport);
-			    }
+				//BaseServerConfig serverConfig = serverConfigMap.get(poolFactory.toString());
 				
 				tProtocol.writeMessageBegin(msg);
 
@@ -240,8 +225,8 @@ public class ThirftJsoaProxy {
 
 				return true;
 			} finally {
-				if (poolFactory != null && transport != null) {
-					poolFactory.releaseConnection(transport); //归还transport到连接池
+				if (poolFactory != null && tProtocol != null) {
+					poolFactory.releaseConnection(tProtocol); //归还tProtocol到连接池
 				}
 			}
 		}

@@ -17,6 +17,8 @@
 	    <property name="maxTotal" value="15"/> <!-- 链接池中最大连接数，默认为8 -->
 	    <property name="maxIdle" value="15"/> <!--  链接池中最大空闲的连接数,默认为8 -->
 	    <property name="maxWaitMillis" value="3000"/> <!-- 当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位：毫秒；默认为-1，表示永不超时 -->
+	    <!-- <property name="testWhileIdle" value="true"/>
+	    <property name="timeBetweenEvictionRunsMillis" value="9000"/> -->
 	</bean>
 	<bean id="serverConfig" class="com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig">
         <property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
