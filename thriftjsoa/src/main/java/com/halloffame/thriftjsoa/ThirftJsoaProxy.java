@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -25,14 +25,12 @@ import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.config.ServerZkConfig;
 import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
+import com.halloffame.thriftjsoa.loadbalance.LoadBalanceAbstract;
+import com.halloffame.thriftjsoa.loadbalance.LoadBalanceBean;
+import com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 
 public class ThirftJsoaProxy {
-	//连接池list，每个服务对应一个连接池
-	private List<ConnectionPoolFactory> poolFactorys = new ArrayList<ConnectionPoolFactory>();
-	//每个服务对应的配置map<host + ":" + port, serverConfig>
-	//private Map<String, BaseServerConfig> serverConfigMap = new HashMap<>();
-	
 	private ZooKeeper zk;
 	private int port; //代理服务端口
 	private String zkConnStr; //zk连接串
@@ -40,6 +38,8 @@ public class ThirftJsoaProxy {
 	private String zkRootPath = "/thriftJsoaServer"; //zk根路径，用于取得该路径下注册的所有服务的信息
 	private int zkSessionTimeout = 5000; //zk会话的有效时间，单位是毫秒
 	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理服务的一些配置
+	
+	private LoadBalanceAbstract loadBalance = new WeightRandomLoadBalance(); //负载均衡，默认随机（加权）
 	
 	public String getZkRootPath() {
 		return zkRootPath;
@@ -58,6 +58,12 @@ public class ThirftJsoaProxy {
 	}
 	public void setProxyServerConfig(BaseServerConfig proxyServerConfig) {
 		this.proxyServerConfig = proxyServerConfig;
+	}
+	public LoadBalanceAbstract getLoadBalance() {
+		return loadBalance;
+	}
+	public void setLoadBalance(LoadBalanceAbstract loadBalance) {
+		this.loadBalance = loadBalance;
 	}
 	
 	public ThirftJsoaProxy(int port, String zkConnStr) throws Exception {
@@ -104,8 +110,8 @@ public class ThirftJsoaProxy {
 		
         ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(poolConfig, host, port, 
         		socketTimeout, ssl, transportType, protocolType);
-        poolFactorys.add(poolFactory);
-        //serverConfigMap.put(host + ":" + port, serverConfig);
+        
+        loadBalance.addPoolFactory(poolFactory);
 	}
 	
 	class MyWatcher implements Watcher {
@@ -116,6 +122,8 @@ public class ThirftJsoaProxy {
         	if (event.getType() == EventType.NodeChildrenChanged) {
         		try {
         			List<String> servers = zk.getChildren(zkRootPath, true);
+        			List<ConnectionPoolFactory> poolFactorys = loadBalance.getPoolFactorys();
+        			
         			for (String server : servers) {
         				boolean isFind = false;
         				for (ConnectionPoolFactory poolFactory : poolFactorys) {
@@ -130,9 +138,11 @@ public class ThirftJsoaProxy {
         				}
         			}
         			
-        			for (int i = 0; i < poolFactorys.size(); i++) {
-        				ConnectionPoolFactory poolFactory = poolFactorys.get(i);
+        			Iterator<ConnectionPoolFactory> it = poolFactorys.iterator();
+        			while (it.hasNext()) {
+        				ConnectionPoolFactory poolFactory = it.next();
         				boolean isFind = false;
+        				
         				for (String server : servers) {
         					if ( poolFactory.toString().equals(server) ) {
         						isFind = true;
@@ -142,40 +152,16 @@ public class ThirftJsoaProxy {
         				
         				if (!isFind) { //下线服务
         					System.out.println("下线" + poolFactory);
-        					//serverConfigMap.remove(poolFactory.toString());
-        					
-        					poolFactory.close();
-        					poolFactorys.remove(i);
-        					poolFactory = null;
+        					loadBalance.removePoolFactory(poolFactory, it); 
         				}
         			}
+        			
 				} catch (Exception e) {
 					e.printStackTrace();
 				} 
         	} 
 		}
 		
-	}
-	
-	//负载均衡：最小连接数（加权）
-	private ConnectionPoolFactory getLeastConnPoolFactory() {
-		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(0);
-		double selectWeight = selectPoolFactory.getWeight();
-		System.out.println("poolFactorys=" + poolFactorys); 
-		
-		for (int i = 1; i < poolFactorys.size(); i++) {
-			ConnectionPoolFactory poolFactory = poolFactorys.get(i);
-			double weight = poolFactory.getWeight();
-			System.out.println(selectWeight + "--" + weight);
-			
-			//这里为了简单，没有实现：如果有多个后端的conns/weight值同为最小的，那么对它们采用加权轮询算法
-			if ( weight < selectWeight ) {
-				selectPoolFactory = poolFactory;
-				selectWeight = weight;
-			}
-		}
-		
-		return selectPoolFactory;
 	}
 	
 	class ProxyProcessor implements TProcessor {
@@ -187,8 +173,9 @@ public class ThirftJsoaProxy {
 			try {
 				TMessage msg = in.readMessageBegin();
 				
-				poolFactory = getLeastConnPoolFactory(); //取得最小连接数（加权）的服务
-				tProtocol = poolFactory.getConnection(); 
+				LoadBalanceBean loadBalanceBean = loadBalance.getLoadBalanceConnPool(); 
+				poolFactory = loadBalanceBean.getConnectionPoolFactory();
+				tProtocol = loadBalanceBean.getProtocol();
 				
 				//BaseServerConfig serverConfig = serverConfigMap.get(poolFactory.toString());
 				

@@ -15,6 +15,8 @@
         <property name="workerThreads" value="5"/> 
         <property name="acceptQueueSizePerThread" value="4"/>
     </bean>
+    
+    <bean id="loadBalance" class="com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance"></bean>
         
     <bean id="thirftJsoaProxy" class="com.halloffame.thriftjsoa.ThirftJsoaProxy" init-method="run"> <!-- 实例化成功后运行ThirftJsoaProxy的run方法 -->
 	    <constructor-arg name="port" value="4567"/> <!-- 代理服务端口 -->
@@ -23,6 +25,7 @@
 	    <property name="zkRootPath" value="/thriftJsoaServer"/> <!-- zk根路径，用于取得该路径下注册的所有服务的信息，默认/thriftJsoaServer -->
 	    <property name="zkSessionTimeout" value="5000"/> <!-- zk会话的有效时间，单位是毫秒，默认5000 -->
 	    <property name="proxyServerConfig" ref="proxyServerConfig"/> <!-- 代理服务的一些配置，默认ThreadedSelectorServerConfig -->
+	    <property name="loadBalance" ref="loadBalance"/> <!-- 负载均衡算法，默认随机（加权）WeightRandomLoadBalance -->
 	</bean>
 
 </beans>

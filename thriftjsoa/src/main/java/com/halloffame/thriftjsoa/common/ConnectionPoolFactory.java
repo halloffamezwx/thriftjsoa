@@ -39,6 +39,13 @@ public class ConnectionPoolFactory {
     	pool.close();
     }
     
+    public int getMaxTotal() {
+    	return pool.getMaxTotal();
+    }
+    public int getNumActive() {
+    	return pool.getNumActive();
+    }
+    
     //取得权重值
     public double getWeight() {
     	//活动的连接数 除以 最大连接数
