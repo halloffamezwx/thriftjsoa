@@ -5,11 +5,14 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.thrift.protocol.TProtocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
 import com.halloffame.thriftjsoa.util.MyAtomicInteger;
 
 public class LoadBalanceUtil {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalanceUtil.class.getName());
 	private final static ReentrantLock reentrantLock = new ReentrantLock();
 	private final static MyAtomicInteger myAtomicInteger = new MyAtomicInteger();
 	
@@ -20,6 +23,8 @@ public class LoadBalanceUtil {
 		
 		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(selNum);
 		TProtocol tProtocol = selectPoolFactory.getConnection(); 
+		
+		LOGGER.info("selectPoolFactory={}", selectPoolFactory);
 		
 		LoadBalanceBean loadBalanceBean = new LoadBalanceBean();
 		loadBalanceBean.setConnectionPoolFactory(selectPoolFactory);
@@ -33,6 +38,8 @@ public class LoadBalanceUtil {
 		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(myAtomicInteger.get());
 		myAtomicInteger.incrementAndGet(poolFactorys.size());
 		TProtocol tProtocol = selectPoolFactory.getConnection(); 
+		
+		LOGGER.info("selectPoolFactory={}", selectPoolFactory);
 		
 		LoadBalanceBean loadBalanceBean = new LoadBalanceBean();
 		loadBalanceBean.setConnectionPoolFactory(selectPoolFactory);
@@ -54,7 +61,7 @@ public class LoadBalanceUtil {
 			} else {
 				selectPoolValue = selectPoolFactory.getNumActive();
 			}
-			System.out.println("poolFactorys=" + poolFactorys); 
+			LOGGER.info("poolFactorys={}", poolFactorys); 
 			
 			for (int i = 1; i < poolFactorys.size(); i++) {
 				ConnectionPoolFactory poolFactory = poolFactorys.get(i);
@@ -64,7 +71,7 @@ public class LoadBalanceUtil {
 				} else {
 					poolValue = poolFactory.getNumActive();
 				}
-				System.out.println(selectPoolValue + "--" + poolValue);
+				LOGGER.info("selectPoolValue={}, poolValue={}", selectPoolValue, poolValue);
 				
 				//这里为了简单，没有实现：如果有多个后端的conns/weight(连接池最大连接数)的值同为最小的，那么对它们采用加权轮询算法
 				if ( poolValue < selectPoolValue ) {
@@ -77,6 +84,8 @@ public class LoadBalanceUtil {
 		} finally {
 			reentrantLock.unlock();
         }
+		
+		LOGGER.info("selectPoolFactory={}", selectPoolFactory);
 		
 		LoadBalanceBean loadBalanceBean = new LoadBalanceBean();
 		loadBalanceBean.setConnectionPoolFactory(selectPoolFactory);

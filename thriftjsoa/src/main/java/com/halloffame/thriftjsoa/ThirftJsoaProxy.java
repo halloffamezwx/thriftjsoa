@@ -19,6 +19,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.halloffame.thriftjsoa.common.CommonServer;
 import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
@@ -31,6 +33,8 @@ import com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 
 public class ThirftJsoaProxy {
+	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
+	
 	private ZooKeeper zk;
 	private int port; //代理服务端口
 	private String zkConnStr; //zk连接串
@@ -75,7 +79,7 @@ public class ThirftJsoaProxy {
 		this.zk();
 		
 		ProxyProcessor proxyProcessor = new ProxyProcessor(); //自定义的一个processor，非生成代码	
-        System.out.println("Starting the proxy on port " + port + "...");
+		LOGGER.info("Starting the proxy on port {}...", port);
         CommonServer.serve(port, proxyServerConfig, proxyProcessor);
 	}
 	
@@ -84,7 +88,7 @@ public class ThirftJsoaProxy {
 		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, myWatcher); 
 		
 		List<String> servers = zk.getChildren(zkRootPath, true);
-		System.out.println("zk-servers=" + servers);
+		LOGGER.info("zk-servers={}", servers);
 		for (String server : servers) {
 			addServer(server); //新增服务
 		}
@@ -117,7 +121,7 @@ public class ThirftJsoaProxy {
 	class MyWatcher implements Watcher {
 		@Override
 		public void process(WatchedEvent event) {
-			System.out.println("已经触发了" + event.getType() + "事件！"); 
+			LOGGER.info("已经触发了{}事件！", event.getType()); 
 			//子节点变动：新增或删除
         	if (event.getType() == EventType.NodeChildrenChanged) {
         		try {
@@ -133,7 +137,7 @@ public class ThirftJsoaProxy {
         					}
         				}
         				if (!isFind) {
-        					System.out.println("上线" + server);
+        					LOGGER.info("上线{}", server);
         					addServer(server); //新增服务
         				}
         			}
@@ -151,13 +155,13 @@ public class ThirftJsoaProxy {
         				}
         				
         				if (!isFind) { //下线服务
-        					System.out.println("下线" + poolFactory);
+        					LOGGER.info("下线{}", poolFactory);
         					loadBalance.removePoolFactory(poolFactory, it); 
         				}
         			}
         			
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOGGER.error("zk NodeChildrenChanged process exception:", e); 
 				} 
         	} 
 		}

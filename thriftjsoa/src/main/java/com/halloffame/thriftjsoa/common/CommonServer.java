@@ -1,12 +1,17 @@
 package com.halloffame.thriftjsoa.common;
 
+import java.util.UUID;
+
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
+import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.server.ServerContext;
 import org.apache.thrift.server.TNonblockingServer;
 import org.apache.thrift.server.TServer;
+import org.apache.thrift.server.TServerEventHandler;
 import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.server.TThreadedSelectorServer;
@@ -15,7 +20,11 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TNonblockingServerSocket;
 import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TServerSocket;
+import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.config.ThreadPoolServerConfig;
@@ -25,6 +34,7 @@ import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
  * 启动不同类型的server
  */
 public class CommonServer {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CommonServer.class.getName());
 	
 	public static void serve(int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
 		boolean ssl = serverConfig.isSsl();
@@ -146,9 +156,53 @@ public class CommonServer {
         		serverEngine = new TThreadPoolServer(tThreadPoolServerArgs);
         	}
         }
+        
+        //Set server event handler
+        serverEngine.setServerEventHandler(new MyServerEventHandler());
 
         // Run it
         serverEngine.serve();
 	}
-	
+
+	static class MyServerContext implements ServerContext {
+		int connectionId;
+
+	    public MyServerContext(int connectionId) {
+	    	this.connectionId = connectionId;
+	    }
+
+	    public int getConnectionId() {
+	        return connectionId;
+	    }
+	    public void setConnectionId(int connectionId) {
+	        this.connectionId = connectionId;
+	    }
+	}
+
+	static class MyServerEventHandler implements TServerEventHandler {
+		private int nextConnectionId = 1;
+
+        public void preServe() {
+        	LOGGER.info("MyServerEventHandler.preServe - called only once before server starts accepting connections");
+        }
+
+        public ServerContext createContext(TProtocol input, TProtocol output) {
+            //we can create some connection level data which is stored while connection is alive & served
+        	MyServerContext ctx = new MyServerContext(nextConnectionId++);
+        	LOGGER.info("MyServerEventHandler.createContext - connection #{} established", ctx.getConnectionId());
+            return ctx;
+        }
+
+        public void processContext(ServerContext serverContext, TTransport inputTransport, TTransport outputTransport) {
+        	MDC.put("mdc_trace_id", UUID.randomUUID().toString());
+        	MyServerContext ctx = (MyServerContext)serverContext;
+        	LOGGER.info("MyServerEventHandler.processContext - connection #{} is ready to process next request", ctx.getConnectionId());
+        }
+        
+        public void deleteContext(ServerContext serverContext, TProtocol input, TProtocol output) {
+        	MyServerContext ctx = (MyServerContext)serverContext;
+        	LOGGER.info("MyServerEventHandler.deleteContext - connection #{} terminated", ctx.getConnectionId());
+        }
+    }
+    
 }

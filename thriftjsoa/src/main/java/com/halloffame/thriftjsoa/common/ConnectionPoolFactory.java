@@ -17,9 +17,12 @@ import org.apache.thrift.transport.TFastFramedTransport;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport; 
+import org.apache.thrift.transport.TTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory; 
   
 public class ConnectionPoolFactory {  
+	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
     private GenericObjectPool<TProtocol> pool;  
     private String hostStr;
   
@@ -51,7 +54,7 @@ public class ConnectionPoolFactory {
     	//活动的连接数 除以 最大连接数
     	double numActive = pool.getNumActive(); 
     	double maxTotal = pool.getMaxTotal();
-    	System.out.println(numActive + "**" + maxTotal); 
+    	LOGGER.info("{} getWeight={} / {}", hostStr, numActive, maxTotal); 
     	return numActive / maxTotal;
     }
     
@@ -60,7 +63,7 @@ public class ConnectionPoolFactory {
         try {
 			return pool.borrowObject();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("borrowObject exception:", e); 
 		} 
         return null;
     }  
@@ -175,7 +178,7 @@ public class ConnectionPoolFactory {
 					}
 					tProtocol.readMessageEnd();
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOGGER.error("validateObject exception:", e); 
 				}
 			}
 			
