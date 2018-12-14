@@ -8,10 +8,13 @@ import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TField;
+import org.apache.thrift.protocol.TList;
+import org.apache.thrift.protocol.TMap;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolUtil;
+import org.apache.thrift.protocol.TSet;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
 import org.apache.zookeeper.WatchedEvent;
@@ -168,6 +171,9 @@ public class ThirftJsoaProxy {
 		
 	}
 	
+	/**
+	 * 自定义Processor
+	 */
 	class ProxyProcessor implements TProcessor {
 		@Override
 		public boolean process(TProtocol in, TProtocol out) throws TException {
@@ -222,7 +228,9 @@ public class ThirftJsoaProxy {
 			}
 		}
 		
-		//读写字段数据
+		/**
+		 * 读写数据
+		 */
 		private void readWriteData(TProtocol in, TProtocol out) throws TException {
 			in.readStructBegin();
 			out.writeStructBegin(new TStruct(""));
@@ -237,63 +245,7 @@ public class ThirftJsoaProxy {
 					out.writeFieldBegin(schemeField);
 				}
 				
-				switch (schemeField.type) {
-					case TType.VOID:
-						TProtocolUtil.skip(in, schemeField.type);
-						break;
-					case TType.BOOL:
-						out.writeBool(in.readBool());
-						break;
-					case TType.BYTE:
-						out.writeByte(in.readByte());
-						break;
-					case TType.DOUBLE:
-						out.writeDouble(in.readDouble());
-						break;
-					case TType.I16:
-						out.writeI16(in.readI16());
-						break;
-					case TType.I32:
-						out.writeI32(in.readI32()); 
-						break;
-					case TType.I64:
-						out.writeI64(in.readI64());
-						break;
-					case TType.STRING:
-						out.writeString(in.readString());
-						break;
-					case TType.STRUCT:
-						readWriteData(in, out);
-						break;
-					case TType.MAP:
-						/**
-						 * 这里我懒了，不想写了，readMapBegin返回的TMap对象有3个字段
-						 * keyType，valueType，size，没错就是map的key的类型，value的类型，map的大小
-						 * 从0到size累计循环的按类型读取key和读取value，构造一个hashmap就可以了
-						 */
-						//out.writeMapBegin(in.readMapBegin());
-						//in.readMapEnd();
-						//out.writeMapEnd();
-						break;
-					case TType.SET:
-						//同理MAP类型
-						//out.writeSetBegin(in.readSetBegin());
-						//in.readSetEnd();
-						//out.writeSetEnd();
-						break;
-					case TType.LIST:
-						//同理MAP类型
-						//out.writeListBegin(in.readListBegin());
-						//in.readListEnd();
-						//out.writeListEnd();
-						break;
-					case TType.ENUM:
-						//Enum类型传输时是个i32
-						TProtocolUtil.skip(in, schemeField.type);
-						break;
-					default:
-						TProtocolUtil.skip(in, schemeField.type);
-				}
+				readWriteField(schemeField.type, in, out);
 				
 				in.readFieldEnd();
 				out.writeFieldEnd();
@@ -302,7 +254,82 @@ public class ThirftJsoaProxy {
 			
 			in.readStructEnd();
 			out.writeStructEnd();
-		}	
+		}
+		
+		/**
+		 * 读写字段数据
+		 */
+		private void readWriteField(byte fieldtype, TProtocol in, TProtocol out) throws TException {
+			switch (fieldtype) {
+				case TType.VOID:
+					TProtocolUtil.skip(in, fieldtype);
+					break;
+				case TType.BOOL:
+					out.writeBool(in.readBool());
+					break;
+				case TType.BYTE:
+					out.writeByte(in.readByte());
+					break;
+				case TType.DOUBLE:
+					out.writeDouble(in.readDouble());
+					break;
+				case TType.I16:
+					out.writeI16(in.readI16());
+					break;
+				case TType.I32:
+					out.writeI32(in.readI32()); 
+					break;
+				case TType.I64:
+					out.writeI64(in.readI64());
+					break;
+				case TType.STRING:
+					out.writeString(in.readString());
+					break;
+				case TType.STRUCT:
+					readWriteData(in, out);
+					break;
+				case TType.MAP:
+					/**
+					 * readMapBegin返回的TMap对象有3个字段keyType，valueType，size，
+					 * 就是map的key的类型，value的类型，map的大小，
+					 * 从0到size循环按类型读取key和value就行了。
+					 */
+					TMap tMap = in.readMapBegin();
+					out.writeMapBegin(tMap);
+					for (int i = 0; i < tMap.size; i++) {
+						readWriteField(tMap.keyType, in, out);
+						readWriteField(tMap.valueType, in, out);
+					}
+					in.readMapEnd();
+					out.writeMapEnd();
+					break;
+				case TType.SET:
+					TSet tSet = in.readSetBegin();
+					out.writeSetBegin(tSet);
+					for (int i = 0; i < tSet.size; i++) {
+						readWriteField(tSet.elemType, in, out);
+					}
+					in.readSetEnd();
+					out.writeSetEnd();
+					break;
+				case TType.LIST:
+					TList tList = in.readListBegin();
+					out.writeListBegin(tList);
+					for (int i = 0; i < tList.size; i++) {
+						readWriteField(tList.elemType, in, out);
+					}
+					in.readListEnd();
+					out.writeListEnd();
+					break;
+				case TType.ENUM:
+					//Enum类型传输时是个i32
+					TProtocolUtil.skip(in, fieldtype);
+					break;
+				default:
+					TProtocolUtil.skip(in, fieldtype);
+			}
+		}
+		
 	}
 
 }
