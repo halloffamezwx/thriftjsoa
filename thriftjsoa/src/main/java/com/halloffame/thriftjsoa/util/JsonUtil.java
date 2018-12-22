@@ -1,5 +1,7 @@
 package com.halloffame.thriftjsoa.util;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonUtil {
@@ -7,6 +9,12 @@ public class JsonUtil {
 
     static {
         mapper = new ObjectMapper();
+        
+        //设置Jackson序列化时只包含不为空的字段
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        //设置在反序列化时忽略在JSON字符串中存在，而在Java中不存在的属性
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     public static ObjectMapper getObjectMapper() {

@@ -174,7 +174,7 @@ public class ThirftJsoaProxy {
 	/**
 	 * 自定义Processor
 	 */
-	class ProxyProcessor implements TProcessor {
+	public class ProxyProcessor implements TProcessor {
 		@Override
 		public boolean process(TProtocol in, TProtocol out) throws TException {
 			ConnectionPoolFactory poolFactory = null;

@@ -1,7 +1,5 @@
 package com.halloffame.thriftjsoa.common;
 
-import java.util.UUID;
-
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
@@ -24,8 +22,9 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import com.halloffame.thriftjsoa.base.ThirftJsoaProcessor;
+import com.halloffame.thriftjsoa.base.ThirftJsoaProtocol;
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.config.ThreadPoolServerConfig;
 import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
@@ -81,6 +80,7 @@ public class CommonServer {
         } else {
         	tProtocolFactory = new TBinaryProtocol.Factory();
         }
+        tProtocolFactory = new ThirftJsoaProtocol.Factory(tProtocolFactory);
 
         TTransportFactory tTransportFactory = null; //指定的通信方式
         
@@ -91,6 +91,8 @@ public class CommonServer {
         } else { // .equals("buffered") => default value
         	tTransportFactory = new TTransportFactory();
         }
+        
+        tProcessor = new ThirftJsoaProcessor(tProcessor);
 
         TServer serverEngine = null; //指定的服务器模式	
 
@@ -183,25 +185,25 @@ public class CommonServer {
 		private int nextConnectionId = 1;
 
         public void preServe() {
-        	LOGGER.info("MyServerEventHandler.preServe - called only once before server starts accepting connections");
+        	LOGGER.debug("MyServerEventHandler.preServe - called only once before server starts accepting connections");
         }
 
         public ServerContext createContext(TProtocol input, TProtocol output) {
             //we can create some connection level data which is stored while connection is alive & served
         	MyServerContext ctx = new MyServerContext(nextConnectionId++);
-        	LOGGER.info("MyServerEventHandler.createContext - connection #{} established", ctx.getConnectionId());
+        	LOGGER.debug("MyServerEventHandler.createContext - connection #{} established", ctx.getConnectionId());
             return ctx;
         }
 
         public void processContext(ServerContext serverContext, TTransport inputTransport, TTransport outputTransport) {
-        	MDC.put("mdc_trace_id", UUID.randomUUID().toString());
+        	//MDC.put("mdc_trace_id", UUID.randomUUID().toString());
         	MyServerContext ctx = (MyServerContext)serverContext;
-        	LOGGER.info("MyServerEventHandler.processContext - connection #{} is ready to process next request", ctx.getConnectionId());
+        	LOGGER.debug("MyServerEventHandler.processContext - connection #{} is ready to process next request", ctx.getConnectionId());
         }
         
         public void deleteContext(ServerContext serverContext, TProtocol input, TProtocol output) {
         	MyServerContext ctx = (MyServerContext)serverContext;
-        	LOGGER.info("MyServerEventHandler.deleteContext - connection #{} terminated", ctx.getConnectionId());
+        	LOGGER.debug("MyServerEventHandler.deleteContext - connection #{} terminated", ctx.getConnectionId());
         }
     }
     

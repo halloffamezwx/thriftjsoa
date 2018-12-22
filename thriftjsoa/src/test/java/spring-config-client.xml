@@ -24,9 +24,12 @@
 	<bean id="tCompactProtocol" class="org.apache.thrift.protocol.TCompactProtocol" scope="prototype">
 	    <constructor-arg name="transport" ref="tFastFramedTransport"/> 
 	</bean>
+	<bean id="thirftJsoaProtocol" class="com.halloffame.thriftjsoa.base.ThirftJsoaProtocol" scope="prototype">
+	    <constructor-arg name="protocol" ref="tCompactProtocol"/> 
+	</bean>
 	
 	<bean id="testClient" class="thrift.test.ThriftTest.Client" scope="prototype">
-	    <constructor-arg name="prot" ref="tCompactProtocol"/> 
+	    <constructor-arg name="prot" ref="thirftJsoaProtocol"/> 
 	</bean>
 
 </beans>
