@@ -42,8 +42,8 @@ public class ThirftJsoaProxy {
 	private int port; //代理服务端口
 	private String zkConnStr; //zk连接串
 	
-	private String zkRootPath = "/thriftJsoaServer"; //zk根路径，用于取得该路径下注册的所有服务的信息
-	private int zkSessionTimeout = 5000; //zk会话的有效时间，单位是毫秒
+	private String zkRootPath = CommonServer.ZK_ROOT_PATH; //zk根路径，用于取得该路径下注册的所有服务的信息
+	private int zkSessionTimeout = CommonServer.ZK_SESSION_TIMEOUT; //zk会话的有效时间，单位是毫秒
 	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理服务的一些配置
 	
 	private LoadBalanceAbstract loadBalance = new WeightRandomLoadBalance(); //负载均衡，默认随机（加权）
@@ -98,7 +98,7 @@ public class ThirftJsoaProxy {
 	}
 	
 	private void addServer(String server) throws Exception {
-		String[] serverArr = server.split(":");
+		String[] serverArr = server.split("-");
 		String host = serverArr[0];
 		int port = Integer.parseInt(serverArr[1]);
 		

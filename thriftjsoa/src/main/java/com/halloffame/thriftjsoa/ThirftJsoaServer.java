@@ -23,8 +23,8 @@ public class ThirftJsoaServer {
 	private String zkConnStr; //zk连接串
 	private TProcessor tProcessor; //thrift业务处理的processor
 	
-	private String zkRootPath = "/thriftJsoaServer"; //zk根路径
-	private int zkSessionTimeout = 5000; //zk会话的有效时间，单位是毫秒
+	private String zkRootPath = CommonServer.ZK_ROOT_PATH; //zk根路径
+	private int zkSessionTimeout = CommonServer.ZK_SESSION_TIMEOUT; //zk会话的有效时间，单位是毫秒
 	//服务端的一些配置，将会保存到zk节点的data上，proxy将会读取这些配置数据
 	private ServerZkConfig serverZkConfig = new ServerZkConfig(); 
 	
@@ -68,7 +68,7 @@ public class ThirftJsoaServer {
         }
 		
 		//创建一个子节点
-		zk.create(zkRootPath + "/" + host + ":" + port, 
+		zk.create(zkRootPath + "/" + host + "-" + port,
 				JsonUtil.serialize(serverZkConfig).getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
 	} 
 	
@@ -76,7 +76,7 @@ public class ThirftJsoaServer {
 		this.zk();
         
 		LOGGER.info("Starting the server on port {}...", port);
-        CommonServer.serve(port, serverZkConfig.getServerConfig(), tProcessor);
+        CommonServer.serve(zkRootPath, host, port, serverZkConfig.getServerConfig(), tProcessor);
 	}
 
 }

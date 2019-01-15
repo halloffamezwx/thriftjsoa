@@ -34,6 +34,15 @@ import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
  */
 public class CommonServer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CommonServer.class.getName());
+
+	public static String APP_ID = null;
+	public static final String ZK_ROOT_PATH = "/thriftJsoaServer"; //zk根路径，用于取得该路径下注册的所有服务的信息
+	public static final int ZK_SESSION_TIMEOUT = 5000; //zk会话的有效时间，单位是毫秒
+	
+	public static void serve(String zkRootPath, String host, int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
+		APP_ID = zkRootPath + "/" + host + "-" + port;
+		serve(port, serverConfig, tProcessor);
+	}
 	
 	public static void serve(int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
 		boolean ssl = serverConfig.isSsl();
@@ -71,7 +80,7 @@ public class CommonServer {
         }
 
         // Protocol factory
-        TProtocolFactory tProtocolFactory = null; //指定的通信协议
+        TProtocolFactory tProtocolFactory; //指定的通信协议
         
         if (protocol_type.equals("json")) {
         	tProtocolFactory = new TJSONProtocol.Factory();
@@ -82,7 +91,7 @@ public class CommonServer {
         }
         tProtocolFactory = new ThirftJsoaProtocol.Factory(tProtocolFactory);
 
-        TTransportFactory tTransportFactory = null; //指定的通信方式
+        TTransportFactory tTransportFactory; //指定的通信方式
         
         if (transport_type.equals("framed")) {
         	tTransportFactory = new TFramedTransport.Factory();
@@ -94,7 +103,7 @@ public class CommonServer {
         
         tProcessor = new ThirftJsoaProcessor(tProcessor);
 
-        TServer serverEngine = null; //指定的服务器模式	
+        TServer serverEngine; //指定的服务器模式
 
         if (server_type.equals("nonblocking") || server_type.equals("threaded-selector")) {
         	// Nonblocking servers

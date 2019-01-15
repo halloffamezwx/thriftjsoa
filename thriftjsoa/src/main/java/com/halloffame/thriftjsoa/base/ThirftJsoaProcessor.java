@@ -28,23 +28,26 @@ public class ThirftJsoaProcessor implements TProcessor {
             throw new TException("This should not have happened!?");
         }
 
-        int index = message.name.indexOf(ThirftJsoaProtocol.SEPARATOR);
-        String traceId = null;
-        String msgName = null;
-        
-        if (index < 0) {
-        	traceId = UUID.randomUUID().toString().replaceAll("-", "");
-        	msgName = message.name;
+        String[] msgNameArr = message.name.split(ThirftJsoaProtocol.SEPARATOR);
+        String appId = null;
+        String traceId;
+        String msgName;
+
+        if (msgNameArr.length != 3) {
+            traceId = UUID.randomUUID().toString().replaceAll("-", "");
+            msgName = message.name;
         } else {
-        	traceId = message.name.substring(0, index);
-        	
-        	if (tProcessor instanceof ThirftJsoaProxy.ProxyProcessor) {
-        		msgName = message.name;
-        	} else {
-        		msgName = message.name.substring(traceId.length() + ThirftJsoaProtocol.SEPARATOR.length());
-        	}
+            traceId = msgNameArr[0];
+            appId = msgNameArr[1];
+
+            if (tProcessor instanceof ThirftJsoaProxy.ProxyProcessor) {
+                msgName = message.name;
+            } else {
+                msgName = msgNameArr[2];
+            }
         }
-        MDC.put(ThirftJsoaProtocol.THIRFTJSOA_TRACE_KEY, traceId);
+        MDC.put(ThirftJsoaProtocol.TRACE_KEY, traceId);
+        MDC.put(ThirftJsoaProtocol.APP_KEY, appId);
         
         TMessage standardMessage = new TMessage(msgName, message.type, message.seqid);
 
