@@ -22,7 +22,7 @@
 	</bean>
 	<bean id="serverConfig" class="com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig">
         <property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
-        <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default) -->
+        <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
         <property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
         <property name="selectorThreads" value="2"/> 
         <property name="workerThreads" value="5"/> 
@@ -38,12 +38,12 @@
     <bean id="thirftJsoaServer" class="com.halloffame.thriftjsoa.ThirftJsoaServer" init-method="run"> <!-- 实例化成功后运行ThirftJsoaServer的run方法 -->
 	    <constructor-arg name="port" value="9090"/> <!-- 服务端口 -->
 	    <constructor-arg name="zkConnStr" value="localhost:2181"/> <!-- zk连接串 -->
-	    <constructor-arg name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
 	    <constructor-arg name="tProcessor" ref="testProcessor"/> <!-- 业务实现类的processor -->
 	    
 	    <property name="zkRootPath" value="/thriftJsoaServer"/> <!-- zk根路径，默认/thriftJsoaServer -->
 	    <property name="zkSessionTimeout" value="5000"/> <!-- zk会话的有效时间，单位是毫秒，默认5000 -->
 	    <property name="serverZkConfig" ref="serverZkConfig"/> <!-- 服务端的一些配置，将会保存到zk节点的data上，proxy将会读取这些配置数据 -->
+		<property name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
 	</bean>
 
 </beans>

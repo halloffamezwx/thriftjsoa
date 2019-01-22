@@ -1,35 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:context="http://www.springframework.org/schema/context"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/context  
-        http://www.springframework.org/schema/context/spring-context.xsd">
-	
-    <!-- <context:component-scan base-package="thrift.test"/> -->
-    
-    <bean id="tSocket" class="org.apache.thrift.transport.TSocket" scope="prototype">
-	    <constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
-	    <constructor-arg name="port" value="4567"/> <!-- 连接代理服务的端口 -->
-	    <property name="timeout" value="3000"/> <!-- 客户端读超时时间（毫秒） -->
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="clientConfig" class="com.halloffame.thriftjsoa.config.ClientConfig">
+		<constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
+		<constructor-arg name="port" value="4567"/> <!-- 连接代理服务的端口 -->
+		<property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
+		<property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
+		<property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
+		<property name="socketTimeout" value="3000"/> <!-- 客户端读超时时间（毫秒） -->
 	</bean>
-	
-	<!-- thrift的传输方式 ，实例化成功后运行TFastFramedTransport的open方法 -->
-	<bean id="tFastFramedTransport" class="org.apache.thrift.transport.TFastFramedTransport" init-method="open" destroy-method="close" scope="prototype">
-	    <constructor-arg name="underlying" ref="tSocket"/> 
-	</bean>
-	
-	<!-- thrift的传输协议 -->
-	<bean id="tCompactProtocol" class="org.apache.thrift.protocol.TCompactProtocol" scope="prototype">
-	    <constructor-arg name="transport" ref="tFastFramedTransport"/> 
-	</bean>
-	<bean id="thirftJsoaProtocol" class="com.halloffame.thriftjsoa.base.ThirftJsoaProtocol" scope="prototype">
-	    <constructor-arg name="protocol" ref="tCompactProtocol"/> 
-	</bean>
-	
-	<bean id="testClient" class="thrift.test.ThriftTest.Client" scope="prototype">
-	    <constructor-arg name="prot" ref="thirftJsoaProtocol"/> 
+
+	<bean id="clientCollectConfig" class="com.halloffame.thriftjsoa.config.ClientCollectConfig">
+		<constructor-arg name="clientConfigMap">
+			<map>
+				<entry key="thrift.test.ThriftTest.Client"  value-ref="clientConfig"></entry>
+			</map>
+		</constructor-arg>
 	</bean>
 
 </beans>

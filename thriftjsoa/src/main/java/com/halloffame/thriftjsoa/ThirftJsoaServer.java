@@ -14,6 +14,8 @@ import com.halloffame.thriftjsoa.common.CommonServer;
 import com.halloffame.thriftjsoa.config.ServerZkConfig;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 
+import java.net.InetAddress;
+
 public class ThirftJsoaServer {
 	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
 	
@@ -46,22 +48,22 @@ public class ThirftJsoaServer {
 	public void setServerZkConfig(ServerZkConfig serverZkConfig) {
 		this.serverZkConfig = serverZkConfig;
 	}
-	
-	public ThirftJsoaServer(int port, String zkConnStr, String host, TProcessor tProcessor) throws Exception {
-		this.tProcessor = tProcessor;
+	public String getHost() {
+		return host;
+	}
+	public void setHost(String host) {
 		this.host = host;
+	}
+
+	public ThirftJsoaServer(int port, String zkConnStr, TProcessor tProcessor) throws Exception {
+		this.tProcessor = tProcessor;
 		this.zkConnStr = zkConnStr;
 		this.port = port;
 	}
 	
 	private void zk() throws Exception {
 		//创建一个与ZooKeeper服务器的连接
-		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, new Watcher(){
-		    @Override
-		    public void process(WatchedEvent event) {
-		    	LOGGER.debug("receive event : {}", event.getType().name());
-		    }
-		}); 
+		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, event -> LOGGER.debug("receive event : {}", event.getType().name()));
 		Stat stat = zk.exists(zkRootPath, false);
 		if (stat == null) { //不存在就创建根节点
             zk.create(zkRootPath, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT); 
@@ -73,6 +75,10 @@ public class ThirftJsoaServer {
 	} 
 	
 	public void run() throws Exception {
+		if (host == null || "".equals(host.trim())) {
+			InetAddress addr = InetAddress.getLocalHost();
+			host = addr.getHostAddress(); //本地ip
+		}
 		this.zk();
         
 		LOGGER.info("Starting the server on port {}...", port);

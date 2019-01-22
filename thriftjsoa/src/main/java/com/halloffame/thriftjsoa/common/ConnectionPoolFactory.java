@@ -30,7 +30,7 @@ public class ConnectionPoolFactory {
     		int socketTimeout, boolean ssl, String transportType, String protocolType) {  
     	hostStr = host + ":" + port;
     	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout, ssl, transportType, protocolType);  
-        pool = new GenericObjectPool<TProtocol>(objFactory, config);  
+        pool = new GenericObjectPool<>(objFactory, config);
     }
     
     @Override
