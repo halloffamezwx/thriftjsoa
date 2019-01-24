@@ -1,5 +1,8 @@
 package com.halloffame.thriftjsoa.config;
 
+/**
+ * 服务模式：非阻塞io，有一条线程专门负责accept，若干条Selector线程处理网络IO，一个Worker线程池处理消息
+ */
 public class ThreadedSelectorServerConfig extends BaseServerConfig {
 	//非阻塞io，有一条线程专门负责accept，若干条Selector线程处理网络IO，一个Worker线程池处理消息。
 	private String serverType = "threaded-selector"; 

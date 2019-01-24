@@ -35,17 +35,25 @@ import com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig;
 public class CommonServer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CommonServer.class.getName());
 
-	public static String APP_ID = null;
-	public static final String ZK_ROOT_PATH = "/thriftJsoaServer"; //zk根路径，用于取得该路径下注册的所有服务的信息
-	public static final int ZK_SESSION_TIMEOUT = 5000; //zk会话的有效时间，单位是毫秒
-	
-	public static void serve(String zkRootPath, String host, int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
-		APP_ID = zkRootPath + "/" + host + "-" + port;
+	public static String APP_ID = null; //服务的唯一标识
+	public static final String ZK_ROOT_PATH = "/thriftJsoaServer"; //默认的zk根路径，用于取得该路径下注册的所有服务的信息
+	public static final int ZK_SESSION_TIMEOUT = 5000; //默认的zk会话的有效时间，单位是毫秒
+	public static final String ZK_NODE_SEPARATOR = "-"; //服务注册到ZK的节点名称的分隔符
+	public static final String ZK_NODE_CHARSET = "UTF-8"; //服务注册到ZK的节点信息的字符编码
+
+	/**
+	 * 根据配置启动不同类型的server（初始化appid）
+	 */
+	public static void serve(String appId, int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
+		APP_ID = appId;
 		serve(port, serverConfig, tProcessor);
 	}
-	
+
+	/**
+	 * 根据配置启动不同类型的server
+	 */
 	public static void serve(int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws Exception {
-		boolean ssl = serverConfig.isSsl();
+		boolean ssl = serverConfig.isSsl(); //通信是否加密
 		String transport_type = serverConfig.getTransportType(); 
 		String protocol_type = serverConfig.getProtocolType(); 
 		String server_type = serverConfig.getServerType();
@@ -79,7 +87,6 @@ public class CommonServer {
         	throw new Exception("Unknown transport type! " + transport_type);
         }
 
-        // Protocol factory
         TProtocolFactory tProtocolFactory; //指定的通信协议
         
         if (protocol_type.equals("json")) {
@@ -137,7 +144,7 @@ public class CommonServer {
         } else {
         	// Blocking servers	
         	// SSL socket
-        	TServerSocket tServerSocket = null;
+        	TServerSocket tServerSocket;
         	if (ssl) {
         		tServerSocket = TSSLTransportFactory.getServerSocket(port, 0);
         	} else {
@@ -175,6 +182,9 @@ public class CommonServer {
         serverEngine.serve();
 	}
 
+	/**
+	 * 调用接口前后触发事件（传递的数据结构）
+	 */
 	static class MyServerContext implements ServerContext {
 		int connectionId;
 
@@ -190,6 +200,9 @@ public class CommonServer {
 	    }
 	}
 
+	/**
+	 * 调用接口前后触发事件
+	 */
 	static class MyServerEventHandler implements TServerEventHandler {
 		private int nextConnectionId = 1;
 
@@ -205,7 +218,6 @@ public class CommonServer {
         }
 
         public void processContext(ServerContext serverContext, TTransport inputTransport, TTransport outputTransport) {
-        	//MDC.put("mdc_trace_id", UUID.randomUUID().toString());
         	MyServerContext ctx = (MyServerContext)serverContext;
         	LOGGER.debug("MyServerEventHandler.processContext - connection #{} is ready to process next request", ctx.getConnectionId());
         }

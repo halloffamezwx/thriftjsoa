@@ -1,21 +1,21 @@
 package com.halloffame.thriftjsoa;
 
+import com.halloffame.thriftjsoa.common.CommonServer;
+import com.halloffame.thriftjsoa.config.ServerZkConfig;
+import com.halloffame.thriftjsoa.util.JsonUtil;
 import org.apache.thrift.TProcessor;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.halloffame.thriftjsoa.common.CommonServer;
-import com.halloffame.thriftjsoa.config.ServerZkConfig;
-import com.halloffame.thriftjsoa.util.JsonUtil;
-
 import java.net.InetAddress;
 
+/**
+ * ThirftJsoa服务端
+ */
 public class ThirftJsoaServer {
 	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
 	
@@ -55,13 +55,16 @@ public class ThirftJsoaServer {
 		this.host = host;
 	}
 
-	public ThirftJsoaServer(int port, String zkConnStr, TProcessor tProcessor) throws Exception {
+	public ThirftJsoaServer(int port, String zkConnStr, TProcessor tProcessor) {
 		this.tProcessor = tProcessor;
 		this.zkConnStr = zkConnStr;
 		this.port = port;
 	}
-	
-	private void zk() throws Exception {
+
+	/**
+	 * 连接zk创建节点
+	 */
+	private void zk(String path) throws Exception {
 		//创建一个与ZooKeeper服务器的连接
 		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, event -> LOGGER.debug("receive event : {}", event.getType().name()));
 		Stat stat = zk.exists(zkRootPath, false);
@@ -70,19 +73,22 @@ public class ThirftJsoaServer {
         }
 		
 		//创建一个子节点
-		zk.create(zkRootPath + "/" + host + "-" + port,
-				JsonUtil.serialize(serverZkConfig).getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-	} 
-	
+		zk.create(path, JsonUtil.serialize(serverZkConfig).getBytes(CommonServer.ZK_NODE_CHARSET), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+	}
+
+	/**
+	 * 启动运行
+	 */
 	public void run() throws Exception {
-		if (host == null || "".equals(host.trim())) {
-			InetAddress addr = InetAddress.getLocalHost();
-			host = addr.getHostAddress(); //本地ip
+		if (host == null || "".equals(host)) {
+			InetAddress inetAddress = InetAddress.getLocalHost();
+			host = inetAddress.getHostAddress(); //本地ip
 		}
-		this.zk();
+		String path = zkRootPath + "/" + host + CommonServer.ZK_NODE_SEPARATOR + port;
+		this.zk(path);
         
 		LOGGER.info("Starting the server on port {}...", port);
-        CommonServer.serve(zkRootPath, host, port, serverZkConfig.getServerConfig(), tProcessor);
+        CommonServer.serve(path, port, serverZkConfig.getServerConfig(), tProcessor);
 	}
 
 }

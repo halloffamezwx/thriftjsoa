@@ -35,6 +35,9 @@ import com.halloffame.thriftjsoa.loadbalance.LoadBalanceBean;
 import com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 
+/**
+ * ThirftJsoa代理
+ */
 public class ThirftJsoaProxy {
 	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
 	
@@ -44,7 +47,7 @@ public class ThirftJsoaProxy {
 	
 	private String zkRootPath = CommonServer.ZK_ROOT_PATH; //zk根路径，用于取得该路径下注册的所有服务的信息
 	private int zkSessionTimeout = CommonServer.ZK_SESSION_TIMEOUT; //zk会话的有效时间，单位是毫秒
-	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理服务的一些配置
+	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理的服务配置，默认threaded-selector
 	
 	private LoadBalanceAbstract loadBalance = new WeightRandomLoadBalance(); //负载均衡，默认随机（加权）
 	
@@ -73,11 +76,14 @@ public class ThirftJsoaProxy {
 		this.loadBalance = loadBalance;
 	}
 	
-	public ThirftJsoaProxy(int port, String zkConnStr) throws Exception {
+	public ThirftJsoaProxy(int port, String zkConnStr) {
 		this.port = port;
 		this.zkConnStr = zkConnStr;
 	}
-	
+
+	/**
+	 * 启动运行
+	 */
 	public void run() throws Exception {
 		this.zk();
 		
@@ -85,7 +91,10 @@ public class ThirftJsoaProxy {
 		LOGGER.info("Starting the proxy on port {}...", port);
         CommonServer.serve(port, proxyServerConfig, proxyProcessor);
 	}
-	
+
+	/**
+	 * 连接ZK读取节点信息建立与对应服务相通的连接池
+	 */
 	private void zk() throws Exception {
 		MyWatcher myWatcher = new MyWatcher();
 		zk = new ZooKeeper(zkConnStr, zkSessionTimeout, myWatcher); 
@@ -96,15 +105,19 @@ public class ThirftJsoaProxy {
 			addServer(server); //新增服务
 		}
 	}
-	
+
+	/**
+	 * 新增服务，建立对应连接池
+	 */
 	private void addServer(String server) throws Exception {
-		String[] serverArr = server.split("-");
+		String[] serverArr = server.split(CommonServer.ZK_NODE_SEPARATOR);
 		String host = serverArr[0];
 		int port = Integer.parseInt(serverArr[1]);
-		
+
+		//取服务注册到ZK的节点相关信息
 		Stat stat = new Stat();
 		byte[] serverZkConfigData = zk.getData(zkRootPath + "/" + server, false, stat);
-		String serverZkConfigStr = new String(serverZkConfigData, "UTF-8");
+		String serverZkConfigStr = new String(serverZkConfigData, CommonServer.ZK_NODE_CHARSET);
 		
 		ServerZkConfig serverZkConfig = JsonUtil.deserialize(serverZkConfigStr, ServerZkConfig.class);
 		GenericObjectPoolConfig poolConfig = serverZkConfig.getPoolConfig();
@@ -114,13 +127,18 @@ public class ThirftJsoaProxy {
 		boolean ssl = serverConfig.isSsl();
 		String transportType = serverConfig.getTransportType();
 		String protocolType = serverConfig.getProtocolType();
-		
+
+		//建立连接池
         ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(poolConfig, host, port, 
         		socketTimeout, ssl, transportType, protocolType);
-        
+
+        //添加连接池到负载均衡的list列表
         loadBalance.addPoolFactory(poolFactory);
 	}
-	
+
+	/**
+	 * 监控ZK节点变动，动态新增或删除服务
+	 */
 	class MyWatcher implements Watcher {
 		@Override
 		public void process(WatchedEvent event) {
@@ -172,7 +190,8 @@ public class ThirftJsoaProxy {
 	}
 	
 	/**
-	 * 自定义Processor
+	 * 代理端自定义Processor
+	 * 主要功能是读取客户端发来的信息，然后通过负载均衡选择对应连接池的连接转发到服务端
 	 */
 	public class ProxyProcessor implements TProcessor {
 		@Override
@@ -181,38 +200,36 @@ public class ThirftJsoaProxy {
 			TProtocol tProtocol = null; //通信协议
 			
 			try {
-				TMessage msg = in.readMessageBegin();
-				
+				TMessage clientMsg = in.readMessageBegin();
+				LOGGER.info("收到请求：" + clientMsg);
+
+				//通过负载均衡取得TProtocol来发消息到对应服务端
 				LoadBalanceBean loadBalanceBean = loadBalance.getLoadBalanceConnPool(); 
 				poolFactory = loadBalanceBean.getConnectionPoolFactory();
 				tProtocol = loadBalanceBean.getProtocol();
 				
-				//BaseServerConfig serverConfig = serverConfigMap.get(poolFactory.toString());
-				
-				tProtocol.writeMessageBegin(msg);
+				tProtocol.writeMessageBegin(clientMsg);
 
 				readWriteData(in, tProtocol);
 				
 				in.readMessageEnd();
 				tProtocol.writeMessageEnd();
 				tProtocol.getTransport().flush();
+
+				TMessage serverMsg = tProtocol.readMessageBegin();
+				out.writeMessageBegin(serverMsg);
 				
-				int seqid = msg.seqid;
-				String methodName = msg.name;
-				
-				msg = tProtocol.readMessageBegin();
-				out.writeMessageBegin(msg);
-				
-				if (msg.type == TMessageType.EXCEPTION) {
+				if (serverMsg.type == TMessageType.EXCEPTION) {
 				    TApplicationException x = TApplicationException.read(tProtocol);
 				    x.write(out); 
 				    tProtocol.readMessageEnd();
 				    out.writeMessageEnd();
-				    throw x;
+				    //throw x;
+					return true;
 				}
-				if (msg.seqid != seqid) {
-				    throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, methodName + " failed: out of sequence response");
-				}
+				//if (serverMsg.seqid != clientMsg.seqid) {
+				//    throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, clientMsg.name + " failed: out of sequence response");
+				//}
 				
 				readWriteData(tProtocol, out);
 				

@@ -1,5 +1,8 @@
 package com.halloffame.thriftjsoa.config;
 
+/**
+ * 基础配置
+ */
 public class BaseConfig {
 	private boolean ssl = false; //通信是否加密
 	private String transportType = "fastframed"; //buffered, framed, fastframed, http

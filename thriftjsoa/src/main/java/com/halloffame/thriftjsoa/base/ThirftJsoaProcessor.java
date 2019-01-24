@@ -12,6 +12,9 @@ import org.slf4j.MDC;
 
 import com.halloffame.thriftjsoa.ThirftJsoaProxy;
 
+/**
+ * ThirftJsoa的Processor，用于消息头的traceid和appid的解析处理
+ */
 public class ThirftJsoaProcessor implements TProcessor {
 	
     private final TProcessor tProcessor;
@@ -19,7 +22,8 @@ public class ThirftJsoaProcessor implements TProcessor {
     public ThirftJsoaProcessor(TProcessor tProcessor) {
     	this.tProcessor = tProcessor;
     }
-    
+
+    @Override
     public boolean process(TProtocol iprot, TProtocol oprot) throws TException {
         
         TMessage message = iprot.readMessageBegin();
@@ -28,6 +32,7 @@ public class ThirftJsoaProcessor implements TProcessor {
             throw new TException("This should not have happened!?");
         }
 
+        //消息头的组成是：traceId,appId,原始值
         String[] msgNameArr = message.name.split(ThirftJsoaProtocol.SEPARATOR);
         String appId = null;
         String traceId;
@@ -38,6 +43,9 @@ public class ThirftJsoaProcessor implements TProcessor {
             msgName = message.name;
         } else {
             traceId = msgNameArr[0];
+            if ("".equals(traceId) || "null".equals(traceId)) {
+                traceId = UUID.randomUUID().toString().replaceAll("-", "");
+            }
             appId = msgNameArr[1];
 
             if (tProcessor instanceof ThirftJsoaProxy.ProxyProcessor) {
@@ -46,6 +54,7 @@ public class ThirftJsoaProcessor implements TProcessor {
                 msgName = msgNameArr[2];
             }
         }
+        //把消息头的traceid和appid存放到MDC，这样任何地方的业务代码有需要的话就可以从MDC取出来
         MDC.put(ThirftJsoaProtocol.TRACE_KEY, traceId);
         MDC.put(ThirftJsoaProtocol.APP_KEY, appId);
         
@@ -53,7 +62,10 @@ public class ThirftJsoaProcessor implements TProcessor {
 
         return tProcessor.process(new StoredMessageProtocol(iprot, standardMessage), oprot);
     }
-    
+
+    /**
+     * TProtocol已经从流里面读取了消息头并处理过，需要重新装饰，让后面的流程读取正确的消息头
+     */
     private static class StoredMessageProtocol extends TProtocolDecorator {
         TMessage messageBegin;
         

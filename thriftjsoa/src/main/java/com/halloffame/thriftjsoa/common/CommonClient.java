@@ -12,22 +12,31 @@ import org.apache.thrift.transport.*;
 import java.lang.reflect.Constructor;
 import java.util.Map;
 
+/**
+ * 客户端工具类
+ */
 public class CommonClient {
     public static final ThreadLocal<Map<Class<? extends TServiceClient>, TServiceClient>> tServiceClientMapThreadLocal = new ThreadLocal<>();
 
+    /**
+     * 从ThreadLocal里取得客户端
+     */
     public static <T extends TServiceClient> T getClient(Class<T> clazz) {
         Map<Class<? extends TServiceClient>, TServiceClient> tServiceClientMap = tServiceClientMapThreadLocal.get();
         TServiceClient tServiceClient = tServiceClientMap.get(clazz);
         return (T)tServiceClient;
     }
 
+    /**
+     * 根据配置创建客户端
+     */
     public static <T extends TServiceClient> T createClient(Class<T> clazz, ClientConfig clientConfig) throws Exception {
         String protocol_type = clientConfig.getProtocolType(); //需要和服务端的一致才能正常通信
         String transport_type = clientConfig.getTransportType(); //需要和服务端的一致才能正常通信
         boolean ssl = clientConfig.isSsl(); //传输是否加密
-        int socketTimeout = clientConfig.getSocketTimeout();
-        String host = clientConfig.getHost();
-        int port = clientConfig.getPort();
+        int socketTimeout = clientConfig.getSocketTimeout(); //读超时时间
+        String host = clientConfig.getHost(); //服务主机
+        int port = clientConfig.getPort(); //服务端口
 
         //检查传入的变量值是否正确
         if (protocol_type.equals("binary")) {
@@ -49,13 +58,13 @@ public class CommonClient {
             throw new Exception("SSL is not supported over http.");
         }
 
-        TTransport transport = null; //指定的通信方式
+        TTransport transport; //指定的通信方式
 
         if (transport_type.equals("http")) {
             String url = "http://" + host + ":" + port + "/service";
             transport = new THttpClient(url);
         } else {
-            TSocket socket = null;
+            TSocket socket;
             if (ssl == true) {
                 socket = TSSLTransportFactory.getClientSocket(host, port, 0);
             } else {
@@ -73,7 +82,7 @@ public class CommonClient {
             }
         }
 
-        TProtocol tProtocol = null;
+        TProtocol tProtocol;
         if (protocol_type.equals("json")) {
             tProtocol = new TJSONProtocol(transport);
         } else if (protocol_type.equals("compact")) {

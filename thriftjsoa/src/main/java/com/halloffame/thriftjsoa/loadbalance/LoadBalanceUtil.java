@@ -11,12 +11,17 @@ import org.slf4j.LoggerFactory;
 import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
 import com.halloffame.thriftjsoa.util.MyAtomicInteger;
 
+/**
+ * 负载均衡算法工具
+ */
 public class LoadBalanceUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalanceUtil.class.getName());
-	private final static ReentrantLock reentrantLock = new ReentrantLock();
-	private final static MyAtomicInteger myAtomicInteger = new MyAtomicInteger();
-	
-	//随机
+	private final static ReentrantLock reentrantLock = new ReentrantLock(); //最小连接数计算时的锁
+	private final static MyAtomicInteger myAtomicInteger = new MyAtomicInteger(); //轮询的原子计数器
+
+	/**
+	 * 随机
+	 */
 	public static LoadBalanceBean getRandomLoadBalanceConnPool(List<ConnectionPoolFactory> poolFactorys) {
 		Random random = new Random();
 		int selNum = random.nextInt(poolFactorys.size());
@@ -32,8 +37,10 @@ public class LoadBalanceUtil {
 		
 		return loadBalanceBean;
 	}
-	
-	//轮询
+
+	/**
+	 * 轮询
+	 */
 	public static LoadBalanceBean getPollingLoadBalanceConnPool(List<ConnectionPoolFactory> poolFactorys) {
 		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(myAtomicInteger.get());
 		myAtomicInteger.incrementAndGet(poolFactorys.size());
@@ -47,8 +54,10 @@ public class LoadBalanceUtil {
 		
 		return loadBalanceBean;
 	}
-	
-	//最小连接数
+
+	/**
+	 * 最小连接数
+	 */
 	public static LoadBalanceBean getLeastConnLoadBalanceConnPool(List<ConnectionPoolFactory> poolFactorys, boolean isWeight) {
 		ConnectionPoolFactory selectPoolFactory = poolFactorys.get(0);
 		TProtocol tProtocol = null;

@@ -11,6 +11,9 @@ import org.slf4j.MDC;
 
 import com.halloffame.thriftjsoa.common.CommonServer;
 
+/**
+ * ThirftJsoa的Protocol，用于消息头的traceid和appid的解析处理
+ */
 public class ThirftJsoaProtocol extends TProtocolDecorator {
 
     public static final String SEPARATOR = ",";
@@ -35,7 +38,10 @@ public class ThirftJsoaProtocol extends TProtocolDecorator {
             super.writeMessageBegin(tMessage);
         }
     }
-    
+
+    /**
+     * ThirftJsoaProtocol的工厂类
+     */
     public static class Factory implements TProtocolFactory {
 		private static final long serialVersionUID = 1L;
 		

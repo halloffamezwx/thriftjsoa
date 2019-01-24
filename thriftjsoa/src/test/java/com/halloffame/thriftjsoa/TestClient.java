@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa;
 
-import com.halloffame.thriftjsoa.annotation.ClientAnnotation;
+import com.halloffame.thriftjsoa.aop.ClientAnnotation;
 import com.halloffame.thriftjsoa.common.CommonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

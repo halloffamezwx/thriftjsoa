@@ -6,9 +6,12 @@ import java.util.List;
 
 import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
 
+/**
+ * 负载均衡抽象基类（加权）
+ */
 public abstract class WeightLoadBalanceAbstract extends LoadBalanceAbstract {
 	//加权的连接池list，权重是连接池的最大连接数
-	private List<ConnectionPoolFactory> weightPoolFactorys = new ArrayList<ConnectionPoolFactory>();
+	private List<ConnectionPoolFactory> weightPoolFactorys = new ArrayList<>();
 	
 	public List<ConnectionPoolFactory> getWeightPoolFactorys() {
 		return weightPoolFactorys;

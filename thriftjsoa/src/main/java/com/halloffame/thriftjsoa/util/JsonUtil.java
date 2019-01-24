@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * jackson工具
+ */
 public class JsonUtil {
     private static final ObjectMapper mapper;
 
@@ -21,6 +24,9 @@ public class JsonUtil {
         return mapper;
     }
 
+    /**
+     * 序列化
+     */
     public static String serialize(Object obj) {
         try {
             return mapper.writeValueAsString(obj);
@@ -29,6 +35,9 @@ public class JsonUtil {
         }
     }
 
+    /**
+     * 反序列化
+     */
     public static <T> T deserialize(String json, Class<T> cls) {
         try {
             return mapper.readValue(json, cls);

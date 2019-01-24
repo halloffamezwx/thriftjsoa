@@ -19,12 +19,15 @@ import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory; 
-  
+import org.slf4j.LoggerFactory;
+
+/**
+ * 连接池工厂类
+ */
 public class ConnectionPoolFactory {  
 	private final Logger LOGGER = LoggerFactory.getLogger(getClass().getName());
-    private GenericObjectPool<TProtocol> pool;  
-    private String hostStr;
+    private GenericObjectPool<TProtocol> pool; //连接池
+    private String hostStr; //主机 + 端口
   
     public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, 
     		int socketTimeout, boolean ssl, String transportType, String protocolType) {  
@@ -41,15 +44,24 @@ public class ConnectionPoolFactory {
     public void close() {
     	pool.close();
     }
-    
+
+	/**
+	 * 取得最大连接数
+	 */
     public int getMaxTotal() {
     	return pool.getMaxTotal();
     }
+
+	/**
+	 * 取得活动连接数
+	 */
     public int getNumActive() {
     	return pool.getNumActive();
     }
-    
-    //取得权重值
+
+	/**
+	 * 取得权重值
+	 */
     public double getWeight() {
     	//活动的连接数 除以 最大连接数
     	double numActive = pool.getNumActive(); 
@@ -57,8 +69,10 @@ public class ConnectionPoolFactory {
     	LOGGER.info("{} getWeight={} / {}", hostStr, numActive, maxTotal); 
     	return numActive / maxTotal;
     }
-    
-    //从池里获取一个TProtocol对象
+
+	/**
+	 * 从池里获取一个TProtocol对象
+	 */
     public TProtocol getConnection() {  
         try {
 			return pool.borrowObject();
@@ -67,18 +81,24 @@ public class ConnectionPoolFactory {
 		} 
         return null;
     }  
-    
-    //把一个TProtocol对象归还到池里
+
+	/**
+	 * 把一个TProtocol对象归还到池里
+	 */
     public void releaseConnection(TProtocol tProtocol) {  
         pool.returnObject(tProtocol);   
     }  
     
-    /*
+    /**
      * 连接池管理的对象TProtocol的工厂类，
      * GenericObjectPool会使用此类的create方法来
      * 创建TProtocol对象并放进pool里进行管理等操作。
      */
-    class ConnectionFactory extends BasePooledObjectFactory<TProtocol> {   
+    class ConnectionFactory extends BasePooledObjectFactory<TProtocol> {
+		public static final int seqid = 0; //检查对象的有效性请求的seqid
+		public static final String methodName = "proxyValidate"; //检查对象的有效性请求的不存在的接口名
+		public static final String exceptionMsg = "Invalid method name: '" + methodName + "'"; //检查对象的有效性期待服务端返回的错误消息
+
     	private String host;  
         private int port;
         private int socketTimeout;
@@ -94,12 +114,14 @@ public class ConnectionPoolFactory {
         	this.transportType = transportType;
         	this.protocolType = protocolType;
         }  
-        
-        //创建TProtocol类型对象方法
+
+		/**
+		 * 创建TProtocol类型对象方法
+		 */
         @Override
 		public TProtocol create() throws Exception {
-        	TTransport transport = null;
-        	TSocket socket = null;
+        	TTransport transport; //通信方式
+        	TSocket socket;
 	        if (ssl == true) {
 	            socket = TSSLTransportFactory.getClientSocket(host, port, 0);
 	        } else {
@@ -119,7 +141,7 @@ public class ConnectionPoolFactory {
 	        	transport.open();
 	        }
 	        
-	        TProtocol tProtocol = null; //通信协议
+	        TProtocol tProtocol; //通信协议
 		    if (protocolType.equals("json")) {
 		        tProtocol = new TJSONProtocol(transport);
 		    } else if (protocolType.equals("compact")) {
@@ -131,29 +153,32 @@ public class ConnectionPoolFactory {
 			return tProtocol;
 		}
 
-        //把TProtocol对象打包成池管理的对象PooledObject<TProtocol>
+		/**
+		 * 把TProtocol对象打包成池管理的对象PooledObject<TProtocol>
+		 */
 		@Override
 		public PooledObject<TProtocol> wrap(TProtocol tProtocol) {
-			return new DefaultPooledObject<TProtocol>(tProtocol);
+			return new DefaultPooledObject<>(tProtocol);
 		}
-		
-		//销毁对象
+
+		/**
+		 * 销毁对象
+		 */
 		@Override
 	    public void destroyObject(final PooledObject<TProtocol> p) throws Exception { 
 			TTransport tTransport = p.getObject().getTransport();
 			tTransport.flush();
 			tTransport.close();
 	    }
-		
-		//检查对象的有效性
+
+		/**
+		 * 检查对象的有效性
+		 * 请求一个不存在的接口，服务端会返回相应的错误信息，这样就可以判断此链路是否相通
+		 */
 		@Override
 	    public boolean validateObject(final PooledObject<TProtocol> p) {
 			TProtocol tProtocol = p.getObject();
 			if ( tProtocol.getTransport().isOpen() ) {
-				int seqid = 0;
-				String methodName = "proxyValidate";
-				String exceptionMsg = "Invalid method name: '" + methodName + "'";
-				
 				try {
 					tProtocol.writeMessageBegin(new TMessage(methodName, TMessageType.CALL, seqid));
 					tProtocol.writeStructBegin(new TStruct(""));
