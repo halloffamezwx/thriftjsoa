@@ -17,16 +17,17 @@
 	    <property name="maxTotal" value="15"/> <!-- 链接池中最大连接数，默认为8 -->
 	    <property name="maxIdle" value="15"/> <!--  链接池中最大空闲的连接数,默认为8 -->
 	    <property name="maxWaitMillis" value="3000"/> <!-- 当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位：毫秒；默认为-1，表示永不超时 -->
-	    <!-- <property name="testWhileIdle" value="true"/>
-	    <property name="timeBetweenEvictionRunsMillis" value="9000"/> -->
+	    <!-- 启动连接池的对象有效性检查，对象空闲时每隔9秒调用连接池的validateObject进行检查
+	    <property name="testWhileIdle" value="true"/> 默认false
+	    <property name="timeBetweenEvictionRunsMillis" value="9000"/> 默认-1不启动 -->
 	</bean>
 	<bean id="serverConfig" class="com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig">
         <property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
         <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
         <property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
-        <property name="selectorThreads" value="2"/> 
-        <property name="workerThreads" value="5"/> 
-        <property name="acceptQueueSizePerThread" value="4"/> 
+        <property name="selectorThreads" value="2"/> <!-- 用来处理已经连接的网络IO的线程数，默认2 -->
+        <property name="workerThreads" value="5"/> <!-- 用来处理请求消息的工作线程数（未指定executorService），设为0时，将在selectorThreads里处理，TNonblockingServer就是这样处理的，默认5 -->
+        <property name="acceptQueueSizePerThread" value="4"/> <!-- accept线程的连接传到每个selector线程的阻塞队列的大小，默认4 -->
     </bean>
 	
     <bean id="serverZkConfig" class="com.halloffame.thriftjsoa.config.ServerZkConfig">
@@ -43,7 +44,7 @@
 	    <property name="zkRootPath" value="/thriftJsoaServer"/> <!-- zk根路径，默认/thriftJsoaServer -->
 	    <property name="zkSessionTimeout" value="5000"/> <!-- zk会话的有效时间，单位是毫秒，默认5000 -->
 	    <property name="serverZkConfig" ref="serverZkConfig"/> <!-- 服务端的一些配置，将会保存到zk节点的data上，proxy将会读取这些配置数据 -->
-		<property name="host" value="localhost"/> <!-- 向zk注册本服务的地址 -->
+		<property name="host" value="localhost"/> <!-- 向zk注册本服务的地址，默认本地ip -->
 	</bean>
 
 </beans>

@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:context="http://www.springframework.org/schema/context"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/context  
-        http://www.springframework.org/schema/context/spring-context.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
  
     <bean id="proxyServerConfig" class="com.halloffame.thriftjsoa.config.ThreadedSelectorServerConfig">
         <property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
-        <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default) -->
+        <property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
         <property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
-        <property name="selectorThreads" value="2"/> 
-        <property name="workerThreads" value="5"/> 
-        <property name="acceptQueueSizePerThread" value="4"/>
+        <property name="selectorThreads" value="2"/> <!-- 用来处理已经连接的网络IO的线程数，默认2 -->
+        <property name="workerThreads" value="5"/> <!-- 用来处理请求消息的工作线程数（未指定executorService），设为0时，将在selectorThreads里处理，TNonblockingServer就是这样处理的，默认5 -->
+        <property name="acceptQueueSizePerThread" value="4"/> <!-- accept线程的连接传到每个selector线程的阻塞队列的大小，默认4 -->
     </bean>
     
     <bean id="loadBalance" class="com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance"></bean>

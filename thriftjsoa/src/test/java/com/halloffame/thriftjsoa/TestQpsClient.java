@@ -14,6 +14,9 @@ import org.apache.thrift.transport.TTransport;
 import thrift.test.ThriftTest;
 import thrift.test.User;
 
+/**
+ * QPS测试客户端
+ */
 public class TestQpsClient {
     private static LongAdder successCount = new LongAdder(); //成功次数
     private static LongAdder failCount = new LongAdder(); //失败次数
@@ -81,7 +84,7 @@ public class TestQpsClient {
                 try {
                 	TSocket socket = new TSocket("localhost", 4567);
                     transport = new TFastFramedTransport(socket);
-        			transport.open();
+                    transport.open();
                     TProtocol tProtocol = new TCompactProtocol(transport);
                     ThriftTest.Client testClient = new ThriftTest.Client(tProtocol);
                     

@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<context:component-scan base-package="com.halloffame.thriftjsoa"/>
 
 	<bean id="clientConfig" class="com.halloffame.thriftjsoa.config.ClientConfig">
 		<constructor-arg name="host" value="localhost"/> <!-- 连接代理服务的地址 -->
 		<constructor-arg name="port" value="4567"/> <!-- 连接代理服务的端口 -->
-		<constructor-arg name="clazz" value="thrift.test.ThriftTest.Client"/>
+		<constructor-arg name="clazz" value="thrift.test.ThriftTest.Client"/> <!-- 生成的客户端的class -->
 		<property name="ssl" value="false"/> <!-- 通信是否加密，默认false -->
 		<property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
 		<property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
-		<property name="socketTimeout" value="3000"/> <!-- 客户端读超时时间（毫秒） -->
+		<property name="socketTimeout" value="3000"/> <!-- 客户端读超时时间（毫秒），默认3000 -->
 	</bean>
 
 </beans>

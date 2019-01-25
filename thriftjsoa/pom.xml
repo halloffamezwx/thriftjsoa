@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
 
     <name>thriftjsoa</name>
-    <description>thriftjsoa</description>
+    <description>thriftjsoa is a SOA framework base on apache thrift and java</description>
 
     <dependencies>
     	<dependency>
