@@ -6,6 +6,7 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TApplicationException;
+import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
@@ -31,7 +32,7 @@ public class ConnectionPoolFactory {
   
     public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, 
     		int socketTimeout, boolean ssl, String transportType, String protocolType) {  
-    	hostStr = host + ":" + port;
+    	hostStr = host + CommonServer.ZK_NODE_SEPARATOR + port;
     	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout, ssl, transportType, protocolType);  
         pool = new GenericObjectPool<>(objFactory, config);
     }
@@ -73,14 +74,13 @@ public class ConnectionPoolFactory {
 	/**
 	 * 从池里获取一个TProtocol对象
 	 */
-    public TProtocol getConnection() {  
-        try {
+    public TProtocol getConnection() {
+		try {
 			return pool.borrowObject();
 		} catch (Exception e) {
-			LOGGER.error("borrowObject exception:", e); 
-		} 
-        return null;
-    }  
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * 把一个TProtocol对象归还到池里
@@ -130,10 +130,10 @@ public class ConnectionPoolFactory {
 	        socket.setTimeout(socketTimeout);
 	        
 	        transport = socket;
-	        if (transportType.equals("buffered")) {
-	        } else if (transportType.equals("framed")) {
+	        if (transportType.equals(TransportType.BUFFERED)) {
+	        } else if (transportType.equals(TransportType.FRAMED)) {
 	            transport = new TFramedTransport(transport);
-	        } else if (transportType.equals("fastframed")) {
+	        } else if (transportType.equals(TransportType.FASTFRAMED)) {
 	            transport = new TFastFramedTransport(transport);
 	        }
 	        
@@ -142,9 +142,9 @@ public class ConnectionPoolFactory {
 	        }
 	        
 	        TProtocol tProtocol; //通信协议
-		    if (protocolType.equals("json")) {
+		    if (protocolType.equals(ProtocolType.JSON)) {
 		        tProtocol = new TJSONProtocol(transport);
-		    } else if (protocolType.equals("compact")) {
+		    } else if (protocolType.equals(ProtocolType.COMPACT)) {
 		        tProtocol = new TCompactProtocol(transport);
 		    } else {
 		        tProtocol = new TBinaryProtocol(transport);
@@ -195,15 +195,10 @@ public class ConnectionPoolFactory {
 					    	return true;
 					    } else {
 					    	throw x;
-					    }
+						}
 					}
-					
-					if (msg.seqid != seqid) {
-					    throw new TApplicationException(TApplicationException.BAD_SEQUENCE_ID, methodName + " failed: out of sequence response");
-					}
-					tProtocol.readMessageEnd();
-				} catch (Exception e) {
-					LOGGER.error("validateObject exception:", e); 
+				} catch (TException e) {
+					LOGGER.info("validateObject TException:", e);
 				}
 			}
 			

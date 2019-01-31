@@ -8,6 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MyAtomicInteger extends AtomicInteger {
 	private static final long serialVersionUID = 7326222005352583809L;
 
+	public MyAtomicInteger(int initialValue) {
+	    super(initialValue);
+    }
+
     /**
      * 累加一
      */

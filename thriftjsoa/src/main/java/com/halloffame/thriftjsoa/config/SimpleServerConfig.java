@@ -1,12 +1,13 @@
 package com.halloffame.thriftjsoa.config;
 
+import com.halloffame.thriftjsoa.common.ServerType;
+
 /**
  * 服务模式：单线程阻塞io
  */
 public class SimpleServerConfig extends BaseServerConfig {
-	private String serverType = "simple"; //单线程阻塞io
-
+	@Override
 	public String getServerType() {
-		return serverType;
+		return ServerType.SIMPLE.getValue();
 	}
 }

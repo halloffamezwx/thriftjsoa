@@ -1,5 +1,6 @@
 package com.halloffame.thriftjsoa.common;
 
+import com.halloffame.thriftjsoa.base.ThirftJsoaException;
 import com.halloffame.thriftjsoa.base.ThirftJsoaProtocol;
 import com.halloffame.thriftjsoa.config.ClientConfig;
 import org.apache.thrift.TServiceClient;
@@ -17,6 +18,7 @@ import java.util.Map;
  */
 public class CommonClient {
     public static final ThreadLocal<Map<Class<? extends TServiceClient>, TServiceClient>> tServiceClientMapThreadLocal = new ThreadLocal<>();
+    public static final String HTTP_URL_TEMPLATE = "http://%s:%s/service";
 
     /**
      * 从ThreadLocal里取得客户端
@@ -39,29 +41,29 @@ public class CommonClient {
         int port = clientConfig.getPort(); //服务端口
 
         //检查传入的变量值是否正确
-        if (protocol_type.equals("binary")) {
-        } else if (protocol_type.equals("compact")) {
-        } else if (protocol_type.equals("json")) {
+        if (protocol_type.equals(ProtocolType.BINARY)) {
+        } else if (protocol_type.equals(ProtocolType.COMPACT)) {
+        } else if (protocol_type.equals(ProtocolType.JSON)) {
         } else {
-            throw new Exception("Unknown protocol type! " + protocol_type);
+            throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown protocol type! " + protocol_type);
         }
 
-        if (transport_type.equals("buffered")) {
-        } else if (transport_type.equals("framed")) {
-        } else if (transport_type.equals("fastframed")) {
-        } else if (transport_type.equals("http")) {
+        if (transport_type.equals(TransportType.BUFFERED)) {
+        } else if (transport_type.equals(TransportType.FRAMED)) {
+        } else if (transport_type.equals(TransportType.FASTFRAMED)) {
+        } else if (transport_type.equals(TransportType.HTTP)) {
         } else {
-            throw new Exception("Unknown transport type! " + transport_type);
+            throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown transport type! " + transport_type);
         }
 
-        if (transport_type.equals("http") && ssl == true) { //不支持https
-            throw new Exception("SSL is not supported over http.");
+        if (transport_type.equals(TransportType.HTTP) && ssl == true) { //不支持https
+            throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "SSL is not supported over http.");
         }
 
         TTransport transport; //指定的通信方式
 
-        if (transport_type.equals("http")) {
-            String url = "http://" + host + ":" + port + "/service";
+        if (transport_type.equals(TransportType.HTTP)) {
+            String url = String.format(HTTP_URL_TEMPLATE, host, port);
             transport = new THttpClient(url);
         } else {
             TSocket socket;
@@ -74,18 +76,18 @@ public class CommonClient {
             socket.setTimeout(socketTimeout);
 
             transport = socket;
-            if (transport_type.equals("buffered")) {
-            } else if (transport_type.equals("framed")) {
+            if (transport_type.equals(TransportType.BUFFERED)) {
+            } else if (transport_type.equals(TransportType.FRAMED)) {
                 transport = new TFramedTransport(transport);
-            } else if (transport_type.equals("fastframed")) {
+            } else if (transport_type.equals(TransportType.FASTFRAMED)) {
                 transport = new TFastFramedTransport(transport);
             }
         }
 
         TProtocol tProtocol;
-        if (protocol_type.equals("json")) {
+        if (protocol_type.equals(ProtocolType.JSON)) {
             tProtocol = new TJSONProtocol(transport);
-        } else if (protocol_type.equals("compact")) {
+        } else if (protocol_type.equals(ProtocolType.COMPACT)) {
             tProtocol = new TCompactProtocol(transport);
         } else {
             tProtocol = new TBinaryProtocol(transport);

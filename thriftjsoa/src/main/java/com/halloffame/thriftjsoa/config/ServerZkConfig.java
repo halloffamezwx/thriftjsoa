@@ -6,9 +6,9 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
  * 服务端保存到ZK的配置
  */
 public class ServerZkConfig {
-	private GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //proxy的连接池配置
-	private int socketTimeout = 3000; //proxy连接server的读超时时间
-	//proxy和server的transportType，protocolType，ssl，serverType等配置
+	private GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //proxy的连接池配置，默认GenericObjectPoolConfig
+	private int socketTimeout = 3000; //proxy连接server的读超时时间，默认3000ms
+	//proxy和server的transportType，protocolType，ssl，serverType等配置，默认ThreadedSelectorServerConfig
 	private BaseServerConfig serverConfig = new ThreadedSelectorServerConfig(); 
 
 	public BaseServerConfig getServerConfig() {
