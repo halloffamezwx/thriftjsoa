@@ -24,6 +24,11 @@ public class TestClient {
         testClient.test();
     }
 
+    /**
+     * test方法会被ClientAspect拦截，然后根据配置创建ThriftTest.Client对象保存在CommonClient的ThreadLocal变量里
+     * CommonClient.getClient将从ThreadLocal变量里取得ThriftTest.Client对象
+     * ThriftTest.Client对象的资源释放将在ClientAspect的finally块里进行
+     */
     @ClientAnnotation(clientClassArr = {ThriftTest.Client.class})
     public void test() throws Exception {
         ThriftTest.Client thriftTestClient = CommonClient.getClient(ThriftTest.Client.class);
