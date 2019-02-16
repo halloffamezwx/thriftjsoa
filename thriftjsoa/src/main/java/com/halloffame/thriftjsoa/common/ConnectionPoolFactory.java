@@ -130,10 +130,10 @@ public class ConnectionPoolFactory {
 	        socket.setTimeout(socketTimeout);
 	        
 	        transport = socket;
-	        if (transportType.equals(TransportType.BUFFERED)) {
-	        } else if (transportType.equals(TransportType.FRAMED)) {
+	        if (transportType.equals(TransportType.BUFFERED.getValue())) {
+	        } else if (transportType.equals(TransportType.FRAMED.getValue())) {
 	            transport = new TFramedTransport(transport);
-	        } else if (transportType.equals(TransportType.FASTFRAMED)) {
+	        } else if (transportType.equals(TransportType.FASTFRAMED.getValue())) {
 	            transport = new TFastFramedTransport(transport);
 	        }
 	        
@@ -142,9 +142,9 @@ public class ConnectionPoolFactory {
 	        }
 	        
 	        TProtocol tProtocol; //通信协议
-		    if (protocolType.equals(ProtocolType.JSON)) {
+		    if (protocolType.equals(ProtocolType.JSON.getValue())) {
 		        tProtocol = new TJSONProtocol(transport);
-		    } else if (protocolType.equals(ProtocolType.COMPACT)) {
+		    } else if (protocolType.equals(ProtocolType.COMPACT.getValue())) {
 		        tProtocol = new TCompactProtocol(transport);
 		    } else {
 		        tProtocol = new TBinaryProtocol(transport);
