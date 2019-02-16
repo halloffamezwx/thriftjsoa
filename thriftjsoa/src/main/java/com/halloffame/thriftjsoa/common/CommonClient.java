@@ -110,7 +110,6 @@ public class CommonClient {
             } else {
                 tProtocol = new TBinaryProtocol(transport);
             }
-            tProtocol = new ThirftJsoaProtocol(tProtocol);
 
             if (transport.isOpen() == false) {
                 transport.open();
@@ -120,9 +119,9 @@ public class CommonClient {
         tServiceClientProtocolMap.put(clazz, tProtocol); //如果是TMultiplexedProtocol，多个客户端对应同一个TProtocol
         tProtocolPoolMap.put(tProtocol, poolFactory); //最后需要释放资源的TProtocol和配置的连接池（可能为null代表没有配置）
 
-        TProtocol finalProtocol = tProtocol;
+        TProtocol finalProtocol = new ThirftJsoaProtocol(tProtocol);
         if (clientConfig.getClientClassConfigs().size() > 1) {
-            finalProtocol = new TMultiplexedProtocol(tProtocol, serviceName);
+            finalProtocol = new TMultiplexedProtocol(finalProtocol, serviceName);
         }
 
         Constructor<T> constructor = clazz.getConstructor(TProtocol.class);
