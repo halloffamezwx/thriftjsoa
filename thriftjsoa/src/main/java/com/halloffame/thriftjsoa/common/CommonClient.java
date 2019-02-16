@@ -60,28 +60,28 @@ public class CommonClient {
             int port = clientConfig.getPort(); //服务端口
 
             //检查传入的变量值是否正确
-            if (protocol_type.equals(ProtocolType.BINARY)) {
-            } else if (protocol_type.equals(ProtocolType.COMPACT)) {
-            } else if (protocol_type.equals(ProtocolType.JSON)) {
+            if (protocol_type.equals(ProtocolType.BINARY.getValue())) {
+            } else if (protocol_type.equals(ProtocolType.COMPACT.getValue())) {
+            } else if (protocol_type.equals(ProtocolType.JSON.getValue())) {
             } else {
                 throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown protocol type! " + protocol_type);
             }
 
-            if (transport_type.equals(TransportType.BUFFERED)) {
-            } else if (transport_type.equals(TransportType.FRAMED)) {
-            } else if (transport_type.equals(TransportType.FASTFRAMED)) {
-            } else if (transport_type.equals(TransportType.HTTP)) {
+            if (transport_type.equals(TransportType.BUFFERED.getValue())) {
+            } else if (transport_type.equals(TransportType.FRAMED.getValue())) {
+            } else if (transport_type.equals(TransportType.FASTFRAMED.getValue())) {
+            } else if (transport_type.equals(TransportType.HTTP.getValue())) {
             } else {
                 throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown transport type! " + transport_type);
             }
 
-            if (transport_type.equals(TransportType.HTTP) && ssl == true) { //不支持https
+            if (transport_type.equals(TransportType.HTTP.getValue()) && ssl == true) { //不支持https
                 throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "SSL is not supported over http.");
             }
 
             TTransport transport; //指定的通信方式
 
-            if (transport_type.equals(TransportType.HTTP)) {
+            if (transport_type.equals(TransportType.HTTP.getValue())) {
                 String url = String.format(HTTP_URL_TEMPLATE, host, port);
                 transport = new THttpClient(url);
             } else {
@@ -95,17 +95,17 @@ public class CommonClient {
                 socket.setTimeout(socketTimeout);
 
                 transport = socket;
-                if (transport_type.equals(TransportType.BUFFERED)) {
-                } else if (transport_type.equals(TransportType.FRAMED)) {
+                if (transport_type.equals(TransportType.BUFFERED.getValue())) {
+                } else if (transport_type.equals(TransportType.FRAMED.getValue())) {
                     transport = new TFramedTransport(transport);
-                } else if (transport_type.equals(TransportType.FASTFRAMED)) {
+                } else if (transport_type.equals(TransportType.FASTFRAMED.getValue())) {
                     transport = new TFastFramedTransport(transport);
                 }
             }
 
-            if (protocol_type.equals(ProtocolType.JSON)) {
+            if (protocol_type.equals(ProtocolType.JSON.getValue())) {
                 tProtocol = new TJSONProtocol(transport);
-            } else if (protocol_type.equals(ProtocolType.COMPACT)) {
+            } else if (protocol_type.equals(ProtocolType.COMPACT.getValue())) {
                 tProtocol = new TCompactProtocol(transport);
             } else {
                 tProtocol = new TBinaryProtocol(transport);

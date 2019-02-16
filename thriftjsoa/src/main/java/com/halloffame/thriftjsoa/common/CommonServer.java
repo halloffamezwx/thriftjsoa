@@ -54,13 +54,13 @@ public class CommonServer {
 		String server_type = serverConfig.getServerType();
 		
 		//检查传入的变量值是否正确
-        if (server_type.equals(ServerType.SIMPLE)) {
-        } else if (server_type.equals(ServerType.THREAD_POOL)) {
-        } else if (server_type.equals(ServerType.NONBLOCKING)) {
+        if (server_type.equals(ServerType.SIMPLE.getValue())) {
+        } else if (server_type.equals(ServerType.THREAD_POOL.getValue())) {
+        } else if (server_type.equals(ServerType.NONBLOCKING.getValue())) {
         	if (ssl == true) {
         		throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "SSL is not supported over nonblocking servers!");
         	}
-        } else if (server_type.equals(ServerType.THREADED_SELECTOR)) {
+        } else if (server_type.equals(ServerType.THREADED_SELECTOR.getValue())) {
         	if (ssl == true) {
         		throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "SSL is not supported over nonblocking servers!");
         	}
@@ -68,25 +68,25 @@ public class CommonServer {
         	throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown server type! " + server_type);
         }
         
-        if (protocol_type.equals(ProtocolType.BINARY)) {
-        } else if (protocol_type.equals(ProtocolType.JSON)) {
-        } else if (protocol_type.equals(ProtocolType.COMPACT)) {
+        if (protocol_type.equals(ProtocolType.BINARY.getValue())) {
+        } else if (protocol_type.equals(ProtocolType.JSON.getValue())) {
+        } else if (protocol_type.equals(ProtocolType.COMPACT.getValue())) {
         } else {
         	throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown protocol type! " + protocol_type);
         }
         
-        if (transport_type.equals(TransportType.BUFFERED)) {
-        } else if (transport_type.equals(TransportType.FRAMED)) {
-        } else if (transport_type.equals(TransportType.FASTFRAMED)) {
+        if (transport_type.equals(TransportType.BUFFERED.getValue())) {
+        } else if (transport_type.equals(TransportType.FRAMED.getValue())) {
+        } else if (transport_type.equals(TransportType.FASTFRAMED.getValue())) {
         } else {
         	throw new ThirftJsoaException(MsgCode.THRIFTJSOA_EXCEPTION, "Unknown transport type! " + transport_type);
         }
 
         TProtocolFactory tProtocolFactory; //指定的通信协议
         
-        if (protocol_type.equals(ProtocolType.JSON)) {
+        if (protocol_type.equals(ProtocolType.JSON.getValue())) {
         	tProtocolFactory = new TJSONProtocol.Factory();
-        } else if (protocol_type.equals(ProtocolType.COMPACT)) {
+        } else if (protocol_type.equals(ProtocolType.COMPACT.getValue())) {
         	tProtocolFactory = new TCompactProtocol.Factory();
         } else {
         	tProtocolFactory = new TBinaryProtocol.Factory();
@@ -95,9 +95,9 @@ public class CommonServer {
 
         TTransportFactory tTransportFactory; //指定的通信方式
         
-        if (transport_type.equals(TransportType.FRAMED)) {
+        if (transport_type.equals(TransportType.FRAMED.getValue())) {
         	tTransportFactory = new TFramedTransport.Factory();
-        } else if (transport_type.equals(TransportType.FASTFRAMED)) {
+        } else if (transport_type.equals(TransportType.FASTFRAMED.getValue())) {
         	tTransportFactory = new TFastFramedTransport.Factory();
         } else { // .equals("buffered") => default value
         	tTransportFactory = new TTransportFactory();
@@ -107,12 +107,12 @@ public class CommonServer {
 
         TServer serverEngine; //指定的服务器模式
 
-        if (server_type.equals(ServerType.NONBLOCKING) || server_type.equals(ServerType.THREADED_SELECTOR)) {
+        if (server_type.equals(ServerType.NONBLOCKING.getValue()) || server_type.equals(ServerType.THREADED_SELECTOR.getValue())) {
         	// Nonblocking servers
         	TNonblockingServerSocket tNonblockingServerSocket =
         			new TNonblockingServerSocket(new TNonblockingServerSocket.NonblockingAbstractServerSocketArgs().port(port));
 
-	        if (server_type.equals(ServerType.NONBLOCKING)) {
+	        if (server_type.equals(ServerType.NONBLOCKING.getValue())) {
 	        	// Nonblocking Server
 	        	TNonblockingServer.Args tNonblockingServerArgs
 	              	= new TNonblockingServer.Args(tNonblockingServerSocket);
@@ -146,7 +146,7 @@ public class CommonServer {
         		tServerSocket = new TServerSocket(new TServerSocket.ServerSocketTransportArgs().port(port));
         	}
 
-        	if (server_type.equals(ServerType.SIMPLE)) {
+        	if (server_type.equals(ServerType.SIMPLE.getValue())) {
         		// Simple Server
         		TServer.Args tServerArgs = new TServer.Args(tServerSocket);
         		tServerArgs.processor(tProcessor);
