@@ -2,12 +2,10 @@ package com.halloffame.thriftjsoa.base;
 
 import java.util.UUID;
 
+import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
-import org.apache.thrift.protocol.TMessage;
-import org.apache.thrift.protocol.TMessageType;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.protocol.TProtocolDecorator;
+import org.apache.thrift.protocol.*;
 import org.slf4j.MDC;
 
 import com.halloffame.thriftjsoa.ThirftJsoaProxy;
@@ -17,10 +15,12 @@ import com.halloffame.thriftjsoa.ThirftJsoaProxy;
  */
 public class ThirftJsoaProcessor implements TProcessor {
 	
-    private final TProcessor tProcessor;
+    private final TProcessor tProcessor; //封装的TProcessor
+    private final String connValidateMethodName; //网络连通检查的请求的不存在的接口名
     
-    public ThirftJsoaProcessor(TProcessor tProcessor) {
+    public ThirftJsoaProcessor(TProcessor tProcessor, String connValidateMethodName) {
     	this.tProcessor = tProcessor;
+    	this.connValidateMethodName = connValidateMethodName;
     }
 
     @Override
@@ -30,6 +30,18 @@ public class ThirftJsoaProcessor implements TProcessor {
 
         if (message.type != TMessageType.CALL && message.type != TMessageType.ONEWAY) {
             throw new TException("This should not have happened!?");
+        }
+
+        //网络连通检查，直接返回TApplicationException.UNKNOWN_METHOD
+        if (connValidateMethodName.equals(message.name)) {
+            TProtocolUtil.skip(iprot, TType.STRUCT);
+            iprot.readMessageEnd();
+            TApplicationException x = new TApplicationException(TApplicationException.UNKNOWN_METHOD, "Invalid method name: '" + message.name + "'");
+            oprot.writeMessageBegin(new TMessage(message.name, TMessageType.EXCEPTION, message.seqid));
+            x.write(oprot);
+            oprot.writeMessageEnd();
+            oprot.getTransport().flush();
+            return true;
         }
 
         //消息头的组成是：traceId,appId,原始值
@@ -57,7 +69,7 @@ public class ThirftJsoaProcessor implements TProcessor {
         //把消息头的traceid和appid存放到MDC，这样任何地方的业务代码有需要的话就可以从MDC取出来
         MDC.put(ThirftJsoaProtocol.TRACE_KEY, traceId);
         MDC.put(ThirftJsoaProtocol.APP_KEY, appId);
-        
+
         TMessage standardMessage = new TMessage(msgName, message.type, message.seqid);
 
         return tProcessor.process(new StoredMessageProtocol(iprot, standardMessage), oprot);

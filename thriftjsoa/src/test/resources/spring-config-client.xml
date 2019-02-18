@@ -41,7 +41,8 @@
 		<property name="transportType" value="fastframed"/> <!-- buffered, framed, fastframed(default), http -->
 		<property name="protocolType" value="compact"/> <!-- binary, json, compact(default) -->
 		<property name="socketTimeout" value="3000"/> <!-- 客户端读超时时间（毫秒），默认3000 -->
-		<property name="poolConfig" ref="poolConfig"/> <!-- 连接池配置 -->
+		<property name="poolConfig" ref="poolConfig"/> <!-- 连接池配置，默认没有连接池 -->
+		<property name="poolValidateMethodName" value="connValidateMethod"/> <!-- 连接池检查对象的有效性请求的不存在的接口名，默认connValidateMethod -->
 	</bean>
 
 </beans>

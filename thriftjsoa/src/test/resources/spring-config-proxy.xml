@@ -23,6 +23,7 @@
 	    <property name="zkSessionTimeout" value="5000"/> <!-- zk会话的有效时间，单位是毫秒，默认5000 -->
 	    <property name="proxyServerConfig" ref="proxyServerConfig"/> <!-- 代理服务的一些配置，默认ThreadedSelectorServerConfig -->
 	    <property name="loadBalance" ref="loadBalance"/> <!-- 负载均衡算法，默认随机（加权）WeightRandomLoadBalance -->
+        <property name="connValidateMethodName" value="connValidateMethod"/> <!-- 网络连通检查的请求的不存在的接口名，默认connValidateMethod -->
 	</bean>
 
 </beans>

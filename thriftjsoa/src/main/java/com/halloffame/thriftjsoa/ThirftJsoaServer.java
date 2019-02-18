@@ -88,7 +88,7 @@ public class ThirftJsoaServer {
 		this.zk(path);
         
 		LOGGER.info("Starting the server on port {}...", port);
-        CommonServer.serve(path, port, serverZkConfig.getServerConfig(), tProcessor);
+        CommonServer.serve(path, port, serverZkConfig.getServerConfig(), tProcessor, serverZkConfig.getPoolValidateMethodName());
 	}
 
 }

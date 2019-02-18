@@ -31,9 +31,9 @@ public class ConnectionPoolFactory {
     private String hostStr; //主机 + 端口
   
     public ConnectionPoolFactory(GenericObjectPoolConfig config, String host, int port, 
-    		int socketTimeout, boolean ssl, String transportType, String protocolType) {  
+    		int socketTimeout, boolean ssl, String transportType, String protocolType, String validateMethodName) {
     	hostStr = host + CommonServer.ZK_NODE_SEPARATOR + port;
-    	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout, ssl, transportType, protocolType);  
+    	ConnectionFactory objFactory = new ConnectionFactory(host, port, socketTimeout, ssl, transportType, protocolType, validateMethodName);
         pool = new GenericObjectPool<>(objFactory, config);
     }
     
@@ -95,9 +95,9 @@ public class ConnectionPoolFactory {
      * 创建TProtocol对象并放进pool里进行管理等操作。
      */
     class ConnectionFactory extends BasePooledObjectFactory<TProtocol> {
-		public static final int seqid = 0; //检查对象的有效性请求的seqid
-		public static final String methodName = "proxyValidate"; //检查对象的有效性请求的不存在的接口名
-		public static final String exceptionMsg = "Invalid method name: '" + methodName + "'"; //检查对象的有效性期待服务端返回的错误消息
+		public static final int validateSeqid = 0; //检查对象的有效性请求的seqid
+		private String validateMethodName; //检查对象的有效性请求的不存在的接口名
+		private String validateExceptionMsg; //检查对象的有效性期待服务端返回的错误消息
 
     	private String host;  
         private int port;
@@ -106,13 +106,15 @@ public class ConnectionPoolFactory {
         private String protocolType;
         private boolean ssl;
           
-        public ConnectionFactory(String host, int port, int socketTimeout, boolean ssl, String transportType, String protocolType) {  
+        public ConnectionFactory(String host, int port, int socketTimeout, boolean ssl, String transportType, String protocolType, String validateMethodName) {
         	this.host = host;
         	this.port = port;
         	this.socketTimeout = socketTimeout;
         	this.ssl = ssl;
         	this.transportType = transportType;
         	this.protocolType = protocolType;
+        	this.validateMethodName = validateMethodName;
+        	this.validateExceptionMsg = "Invalid method name: '" + validateMethodName + "'";
         }  
 
 		/**
@@ -180,7 +182,7 @@ public class ConnectionPoolFactory {
 			TProtocol tProtocol = p.getObject();
 			if ( tProtocol.getTransport().isOpen() ) {
 				try {
-					tProtocol.writeMessageBegin(new TMessage(methodName, TMessageType.CALL, seqid));
+					tProtocol.writeMessageBegin(new TMessage(validateMethodName, TMessageType.CALL, validateSeqid));
 					tProtocol.writeStructBegin(new TStruct(""));
 					tProtocol.writeFieldStop();
 					tProtocol.writeStructEnd();
@@ -191,7 +193,7 @@ public class ConnectionPoolFactory {
 					if (msg.type == TMessageType.EXCEPTION) {
 						TApplicationException x = TApplicationException.read(tProtocol);
 					    tProtocol.readMessageEnd();
-					    if (x.getType() == TApplicationException.UNKNOWN_METHOD && exceptionMsg.equals(x.getMessage())) { 
+					    if (x.getType() == TApplicationException.UNKNOWN_METHOD && validateExceptionMsg.equals(x.getMessage())) {
 					    	return true;
 					    } else {
 					    	throw x;

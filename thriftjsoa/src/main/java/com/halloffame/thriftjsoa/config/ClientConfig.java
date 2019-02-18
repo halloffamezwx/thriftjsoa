@@ -1,5 +1,6 @@
 package com.halloffame.thriftjsoa.config;
 
+import com.halloffame.thriftjsoa.common.CommonServer;
 import com.halloffame.thriftjsoa.common.ConnectionPoolFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -15,6 +16,7 @@ public class ClientConfig extends BaseConfig {
 	private List<ClientClassConfig> clientClassConfigs; //客户端的class list
 	private GenericObjectPoolConfig poolConfig; //连接池配置
 	private ConnectionPoolFactory poolFactory; //连接池
+	private String poolValidateMethodName = CommonServer.CONN_VALIDATE_METHOD_NAME; //连接池检查对象的有效性请求的不存在的接口名
 
 	public ClientConfig(String host, int port, List<ClientClassConfig> clientClassConfigs) {
 		this.host = host;
@@ -49,10 +51,18 @@ public class ClientConfig extends BaseConfig {
 	public void setPoolConfig(GenericObjectPoolConfig poolConfig) {
 		this.poolConfig = poolConfig;
 		poolFactory = new ConnectionPoolFactory(poolConfig, host, port,
-				socketTimeout, isSsl(), getTransportType(), getProtocolType());
+				socketTimeout, isSsl(), getTransportType(), getProtocolType(), poolValidateMethodName);
 	}
 
 	public ConnectionPoolFactory getPoolFactory() {
 		return poolFactory;
+	}
+
+	public String getPoolValidateMethodName() {
+		return poolValidateMethodName;
+	}
+
+	public void setPoolValidateMethodName(String poolValidateMethodName) {
+		this.poolValidateMethodName = poolValidateMethodName;
 	}
 }

@@ -3,6 +3,7 @@ package com.halloffame.thriftjsoa;
 import java.util.Iterator;
 import java.util.List;
 
+import com.halloffame.thriftjsoa.base.ThirftJsoaProtocol;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
@@ -34,6 +35,7 @@ import com.halloffame.thriftjsoa.loadbalance.LoadBalanceAbstract;
 import com.halloffame.thriftjsoa.loadbalance.LoadBalanceBean;
 import com.halloffame.thriftjsoa.loadbalance.WeightRandomLoadBalance;
 import com.halloffame.thriftjsoa.util.JsonUtil;
+import org.slf4j.MDC;
 
 /**
  * ThirftJsoa代理
@@ -50,6 +52,7 @@ public class ThirftJsoaProxy {
 	private BaseServerConfig proxyServerConfig = new ThreadedSelectorServerConfig(); //代理的服务配置，默认threaded-selector
 	
 	private LoadBalanceAbstract loadBalance = new WeightRandomLoadBalance(); //负载均衡，默认随机（加权）
+	private String connValidateMethodName = CommonServer.CONN_VALIDATE_METHOD_NAME; //网络连通检查的请求的不存在的接口名
 	
 	public String getZkRootPath() {
 		return zkRootPath;
@@ -75,7 +78,13 @@ public class ThirftJsoaProxy {
 	public void setLoadBalance(LoadBalanceAbstract loadBalance) {
 		this.loadBalance = loadBalance;
 	}
-	
+	public String getConnValidateMethodName() {
+		return connValidateMethodName;
+	}
+	public void setConnValidateMethodName(String connValidateMethodName) {
+		this.connValidateMethodName = connValidateMethodName;
+	}
+
 	public ThirftJsoaProxy(int port, String zkConnStr) {
 		this.port = port;
 		this.zkConnStr = zkConnStr;
@@ -89,7 +98,7 @@ public class ThirftJsoaProxy {
 		
 		ProxyProcessor proxyProcessor = new ProxyProcessor(); //自定义的一个processor，非生成代码	
 		LOGGER.info("Starting the proxy on port {}...", port);
-        CommonServer.serve(port, proxyServerConfig, proxyProcessor);
+        CommonServer.serve(port, proxyServerConfig, proxyProcessor, connValidateMethodName);
 	}
 
 	/**
@@ -122,6 +131,7 @@ public class ThirftJsoaProxy {
 		ServerZkConfig serverZkConfig = JsonUtil.deserialize(serverZkConfigStr, ServerZkConfig.class);
 		GenericObjectPoolConfig poolConfig = serverZkConfig.getPoolConfig();
 		int socketTimeout = serverZkConfig.getSocketTimeout();
+		String poolValidateMethodName = serverZkConfig.getPoolValidateMethodName();
 		
 		BaseServerConfig serverConfig = serverZkConfig.getServerConfig();
 		boolean ssl = serverConfig.isSsl();
@@ -130,7 +140,7 @@ public class ThirftJsoaProxy {
 
 		//建立连接池
         ConnectionPoolFactory poolFactory = new ConnectionPoolFactory(poolConfig, host, port, 
-        		socketTimeout, ssl, transportType, protocolType);
+        		socketTimeout, ssl, transportType, protocolType, poolValidateMethodName);
 
         //添加连接池到负载均衡的list列表
         loadBalance.addPoolFactory(poolFactory);
@@ -202,6 +212,8 @@ public class ThirftJsoaProxy {
 			try {
 				TMessage clientMsg = in.readMessageBegin();
 				LOGGER.info("收到请求：" + clientMsg);
+				System.out.println("traceId=" + MDC.get(ThirftJsoaProtocol.TRACE_KEY));
+				System.out.println("appId=" + MDC.get(ThirftJsoaProtocol.APP_KEY));
 
 				//通过负载均衡取得TProtocol来发消息到对应服务端
 				LoadBalanceBean loadBalanceBean = loadBalance.getLoadBalanceConnPool(); 

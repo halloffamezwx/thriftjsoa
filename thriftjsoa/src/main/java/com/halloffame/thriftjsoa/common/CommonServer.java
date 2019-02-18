@@ -35,19 +35,20 @@ public class CommonServer {
 	public static final int ZK_SESSION_TIMEOUT = 5000; //默认的zk会话的有效时间，单位是毫秒
 	public static final String ZK_NODE_SEPARATOR = "-"; //服务注册到ZK的节点名称的分隔符
 	public static final String ZK_NODE_CHARSET = "UTF-8"; //服务注册到ZK的节点信息的字符编码
+	public static final String CONN_VALIDATE_METHOD_NAME = "connValidateMethod"; //默认的网络连通检查的请求的不存在的接口名
 
 	/**
 	 * 根据配置启动不同类型的server（初始化appid）
 	 */
-	public static void serve(String appId, int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws ThirftJsoaException, TTransportException {
+	public static void serve(String appId, int port, BaseServerConfig serverConfig, TProcessor tProcessor, String connValidateMethodName) throws ThirftJsoaException, TTransportException {
 		APP_ID = appId;
-		serve(port, serverConfig, tProcessor);
+		serve(port, serverConfig, tProcessor, connValidateMethodName);
 	}
 
 	/**
 	 * 根据配置启动不同类型的server
 	 */
-	public static void serve(int port, BaseServerConfig serverConfig, TProcessor tProcessor) throws ThirftJsoaException, TTransportException {
+	public static void serve(int port, BaseServerConfig serverConfig, TProcessor tProcessor, String connValidateMethodName) throws ThirftJsoaException, TTransportException {
 		boolean ssl = serverConfig.isSsl(); //通信是否加密
 		String transport_type = serverConfig.getTransportType(); 
 		String protocol_type = serverConfig.getProtocolType(); 
@@ -103,7 +104,7 @@ public class CommonServer {
         	tTransportFactory = new TTransportFactory();
         }
         
-        tProcessor = new ThirftJsoaProcessor(tProcessor);
+        tProcessor = new ThirftJsoaProcessor(tProcessor, connValidateMethodName);
 
         TServer serverEngine; //指定的服务器模式
 
