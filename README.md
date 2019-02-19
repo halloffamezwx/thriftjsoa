@@ -100,7 +100,7 @@ public static void main(String[] args) {
  */
 @Component
 public class TestClient {
-	private static final Logger LOGGER = LoggerFactory.getLogger(TestClient.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestClient.class.getName());
 
     public static void main(String [] args) throws Exception {
         AbstractApplicationContext context = new ClassPathXmlApplicationContext("spring-config-client.xml");
