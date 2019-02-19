@@ -134,6 +134,7 @@ public class CommonServer {
 	        	tThreadedSelectorServerArgs.selectorThreads(threadedSelectorServerConfig.getSelectorThreads());
 	        	tThreadedSelectorServerArgs.workerThreads(threadedSelectorServerConfig.getWorkerThreads());
 	        	tThreadedSelectorServerArgs.acceptQueueSizePerThread(threadedSelectorServerConfig.getAcceptQueueSizePerThread());
+				tThreadedSelectorServerArgs.executorService(threadedSelectorServerConfig.getExecutorService());
 	
 	        	serverEngine = new TThreadedSelectorServer(tThreadedSelectorServerArgs);
 	        }

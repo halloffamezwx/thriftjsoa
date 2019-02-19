@@ -2,6 +2,8 @@ package com.halloffame.thriftjsoa.config;
 
 import com.halloffame.thriftjsoa.common.ServerType;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * 服务模式：非阻塞io，有一条线程专门负责accept，若干条Selector线程处理网络IO，一个Worker线程池处理消息
  */
@@ -11,6 +13,8 @@ public class ThreadedSelectorServerConfig extends BaseServerConfig {
     private int workerThreads = 5;
     //accept线程的连接传到每个selector线程的阻塞队列的大小，默认4
     private int acceptQueueSizePerThread = 4;
+	/** The ExecutorService for handling dispatched requests */
+	private ExecutorService executorService = null;
 
 	@Override
 	public String getServerType() {
@@ -34,6 +38,13 @@ public class ThreadedSelectorServerConfig extends BaseServerConfig {
 	}
 	public void setAcceptQueueSizePerThread(int acceptQueueSizePerThread) {
 		this.acceptQueueSizePerThread = acceptQueueSizePerThread;
-	} 
-    
+	}
+
+	public ExecutorService getExecutorService() {
+		return executorService;
+	}
+
+	public void setExecutorService(ExecutorService executorService) {
+		this.executorService = executorService;
+	}
 }
