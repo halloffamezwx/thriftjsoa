@@ -1,4 +1,4 @@
-###1 简介：
+### 1 简介：
 thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现语言是`java`，之前在学习apache thrift时萌生了基于apache thrift来做一个服务治理框架，
 并且写了一系列博客：<http://zhuwx.iteye.com/category/365542>，大致的架构图如下：
 
@@ -6,7 +6,7 @@ thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现�
 
 持续完善中，如果你觉得对你有所启发，帮忙star一下，谢谢！
 
-###2 特性：
+### 2 特性：
 * 接入了spring boot
 * 服务调用支持traceId功能
 * 支持用java代码来定义接口，无需用thrift接口定义文件来生成代码
@@ -16,7 +16,7 @@ thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现�
 * 传输协议支持Protocol Buffers以及服务模式支持Netty（开发中。。。）
 * 支持用注解的方式配置客户端（开发中。。。）
 
-###3 使用方式：
+### 3 使用方式：
 服务端例子参考thriftjsoa-boot-server-test模块代码，代理端例子参考thriftjsoa-boot-proxy-test模块代码，客户端例子参考thriftjsoa-boot-client-test模块代码，
 spring-boot-starter的maven依赖如下所示：
 ```xml
@@ -27,7 +27,7 @@ spring-boot-starter的maven依赖如下所示：
 </dependency>
 ```
 
-####3.1 定义接口（两种实现方式）
+#### 3.1 定义接口（两种实现方式）
 ① 编写接口定义文件UserService.thrift，定义了一个接口getUser。 使用tools目录的`thrift.exe`执行命令`thrift --gen java UserService.thrift`，
 生成文件UserService.java和User.java。
 ```thrift
@@ -82,7 +82,7 @@ public abstract class UserService extends BaseService<User> {
 }
 ```
 
-####3.2 服务端实现
+#### 3.2 服务端实现
 编写服务端spring boot工程的入口类，配置文件以及业务实现类，启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），
 然后启动spring boot工程，看到日志`Starting the server on port 9090...`代表server启动成功。
 
@@ -143,7 +143,7 @@ thriftjsoa:
         zkConnStr: localhost:2181 # 连接串，默认localhost:2181
 ```
 
-###3.3 代理端实现
+#### 3.3 代理端实现
 编写代理端spring boot工程的入口类和配置文件，启动运行工程，看到日志`Starting the proxy on port 4567...`代表proxy启动成功。也可以不需要代理端，直接由客户端连接服务端。
 
 ① 编写spring boot工程入口类
@@ -169,7 +169,7 @@ thriftjsoa:
       loadBalanceType: randomWeight # 负载均衡类型：leastConn, polling, random, leastConnWeight, pollingWeight, randomWeight(建议)，默认不指定
 ```
 
-###3.4 客户端实现
+#### 3.4 客户端实现
 编写客户端spring boot工程的入口类，配置文件，业务类以及测试用例。其中业务类引用client调用服务端接口的方式有两种，对应`3.1`的两种实现方式。
 启动运行测试用例，日志打印`名字：另外一个烟火`，结果符合预期。
 
