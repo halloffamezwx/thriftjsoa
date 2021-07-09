@@ -1,0 +1,27 @@
+thriftjsoa:
+  server:
+    threadedSelectorServerConfig: # 服务模式，默认ThreadedSelectorServerConfig
+      #appId: testServer-1 # 服务的唯一标识，不填就是ip:port，或有配注册中心（zookeeper）的时候就是zkRootPath + zkNodePath
+      port: 9090 # 服务端口，默认9090
+      zkConnConfig: # 注册中心（zookeeper）连接配置
+        zkConnStr: localhost:2181 # 连接串，默认localhost:2181
+        zkSessionTimeout: 5000 # 会话的有效时间，单位是毫秒，默认5000
+        zkRootPath: /thriftJsoaServer # 根路径，默认/thriftJsoaServer
+        #zkNodePath: /testServer-1 # 注册本服务节点的path，不填就是：/本服务ip地址-port
+      zkClientConnServerConfig: # 注册中心（zookeeper）节点保存的数据：客户端请求此服务端的配置数据，例如连接池数据等，不填就会根据服务端数据来生成
+        poolConfig: # 连接池配置
+          maxTotal: 15 # 最大连接数，默认为8
+          maxIdle: 15 # 最大空闲的连接数，默认为8
+          maxWaitMillis: 3000 # 当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位：毫秒；默认为-1，表示永不超时
+          testWhileIdle: true # 默认false，启动连接池的对象有效性检查，对象空闲时每隔timeBetweenEvictionRunsMillis毫秒调用连接池的validateObject进行检查
+          timeBetweenEvictionRunsMillis: 9000 # 默认-1不启动，启动连接池的对象有效性检查，对象空闲时每隔配置的毫秒数调用连接池的validateObject进行检查
+        socketTimeOut: 3000 # 请求server的读超时时间，单位是毫秒，默认3000
+        #maxTotal: 1 # 最大连接数，并不会真的限制请求，只是用来负载均衡时计算权重，如果配了连接池则以poolConfig.maxTotal为准，默认1
+      ssl: false # 通信是否加密，默认false
+      transportType: fastframed # 传输方式：buffered, framed, fastframed(default), http(需要Servlet容器例如tomcat，未实现)
+      #httpPath: # 当传输方式为http时的请求path路径(未实现)，默认空字符串，相当于Servlet容器例如tomcat的web项目的根路径
+      protocolType: compact # 传输协议：binary, compact(default), json
+      connValidateMethodName: thriftJsoaConnValidateMethod # 链接连通性检查的请求的不存在的接口名，默认thriftJsoaConnValidateMethod
+      selectorThreads: 2 # 用来处理已经连接的网络IO的线程数，默认2
+      workerThreads: 5 # 用来处理请求消息的工作线程数（未指定executorService），设为0时，将在selectorThreads里处理，TNonblockingServer就是这样实现的，默认5
+      acceptQueueSizePerThread: 4 # accept线程的连接传到每个selector线程的阻塞队列的大小，默认4

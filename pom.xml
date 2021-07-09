@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.halloffame</groupId>
+    <artifactId>thriftjsoa</artifactId>
+    <packaging>pom</packaging>
+    <version>0.1.0-SNAPSHOT</version>
+
+    <name>thriftjsoa</name>
+    <description>thriftjsoa is a SOA framework base on apache thrift and java</description>
+    <url>https://github.com/halloffamezwx/thriftjsoa</url>
+
+    <properties>
+        <java.version>1.8</java.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <zookeeper.version>3.4.10</zookeeper.version>
+        <libthrift.version>0.9.3</libthrift.version>
+        <commons-pool2.version>2.5.0</commons-pool2.version>
+        <jackson-core.version>2.9.8</jackson-core.version>
+        <jackson-databind.version>2.9.8</jackson-databind.version>
+        <jackson-annotations.version>2.9.8</jackson-annotations.version>
+        <junit.version>4.11</junit.version>
+
+        <aspectjweaver.version>1.9.2</aspectjweaver.version>
+        <spring-boot-autoconfigure.version>2.0.0.RELEASE</spring-boot-autoconfigure.version>
+        <lombok.version>1.16.18</lombok.version>
+
+        <thriftjsoa-main.version>0.1.0-SNAPSHOT</thriftjsoa-main.version>
+        <thriftjsoa-interface-test.version>0.1.0-SNAPSHOT</thriftjsoa-interface-test.version>
+    </properties>
+
+    <modules>  
+        <module>thriftjsoa-main</module>
+        <module>thriftjsoa-spring-boot-starter</module>
+        <module>thriftjsoa-boot-server-test</module>
+        <module>thriftjsoa-boot-proxy-test</module>
+        <module>thriftjsoa-boot-client-test</module>
+        <module>thriftjsoa-interface-test</module>
+        <module>thriftjsoa-boot-webclient-test</module>
+    </modules>
+
+</project>
