@@ -2,6 +2,8 @@ package com.halloffame.thriftjsoa.boot;
 
 import com.halloffame.thriftjsoa.ThriftJsoaProxy;
 import com.halloffame.thriftjsoa.ThriftJsoaServer;
+import com.halloffame.thriftjsoa.boot.annotation.TjClient;
+import com.halloffame.thriftjsoa.boot.annotation.TjClientScan;
 import com.halloffame.thriftjsoa.boot.config.TjExecutorService;
 import com.halloffame.thriftjsoa.boot.constant.ThriftjsoaConstant;
 import com.halloffame.thriftjsoa.boot.properties.ThriftjsoaProperties;
@@ -9,12 +11,14 @@ import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaProxyRunner;
 import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaServerRunner;
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
+import com.halloffame.thriftjsoa.util.ClassUtil;
 import org.apache.thrift.TProcessor;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +28,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
+
+import java.util.Map;
 
 /**
  * spring boot starter的AutoConfiguration
@@ -112,6 +118,29 @@ public class ThriftjsoaAutoConfiguration {
         if (thriftjsoaProperties.getServer() != null) {
             thriftjsoaProperties.getClient().setInTjServer(true);
         }
+
+        String[] packageNames = null;
+        Map<String, Object> tjClientScanBeanMap = applicationContext.getBeansWithAnnotation(TjClientScan.class);
+        if (!tjClientScanBeanMap.isEmpty()) {
+            TjClientScan tjClientScan = tjClientScanBeanMap.values().toArray()[0].getClass().getAnnotation(TjClientScan.class);
+            packageNames = tjClientScan.value();
+        }
+        if (packageNames == null || packageNames.length == 0) {
+            packageNames = new String[1];
+            packageNames[0] = applicationContext.getBeansWithAnnotation(SpringBootApplication.class).values().toArray()[0]
+                    .getClass().getPackage().getName();
+        }
+        for (String packageName : packageNames) {
+            for (Class<?> clazz : ClassUtil.getClzFromPkg(packageName)) {
+                TjClient tjClient = clazz.getAnnotation(TjClient.class);
+                if (tjClient != null) {
+                    tjClient.value();
+                }
+
+                thriftjsoaProperties.getClient().getList();
+            }
+        }
+
         ThriftJsoaSessionFactory sessionFactory = new ThriftJsoaSessionFactory(thriftjsoaProperties.getClient());
 
         ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) applicationContext;
