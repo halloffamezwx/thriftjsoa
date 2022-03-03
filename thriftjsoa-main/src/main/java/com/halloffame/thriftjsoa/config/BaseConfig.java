@@ -5,6 +5,7 @@ import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.constant.ProtocolType;
 import com.halloffame.thriftjsoa.constant.TransportType;
 import lombok.Data;
+import org.apache.zookeeper.ZooKeeper;
 
 /**
  * 基础配置
@@ -52,4 +53,9 @@ public class BaseConfig {
      * 注册中心（zookeeper）连接配置
      */
     private ZkConnConfig zkConnConfig;
+
+    /**
+     * 注册中心（zookeeper）
+     */
+    private ZooKeeper zk;
 }

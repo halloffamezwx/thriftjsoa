@@ -3,11 +3,13 @@ package com.halloffame.thriftjsoa.config;
 import com.halloffame.thriftjsoa.config.client.LoadBalanceClientConfig;
 import com.halloffame.thriftjsoa.config.server.ThreadedSelectorServerConfig;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * 基础配置（代理端）
  */
 @Data
+@Accessors(chain = true)
 public class BaseProxyConfig {
 
     /**

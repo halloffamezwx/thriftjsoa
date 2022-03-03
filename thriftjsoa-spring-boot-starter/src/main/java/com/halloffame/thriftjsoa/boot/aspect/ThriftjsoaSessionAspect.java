@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa.boot.aspect;
 
-import com.halloffame.thriftjsoa.boot.annotation.OpenThriftjsoaSession;
+import com.halloffame.thriftjsoa.boot.annotation.TjSession;
 import com.halloffame.thriftjsoa.session.ThriftJsoaSession;
 import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -23,21 +23,21 @@ public class ThriftjsoaSessionAspect {
     private ThriftJsoaSessionFactory sessionFactory;
 
     /**
-     * 环绕拦截OpenThriftjsoaSession注解的方法
+     * 环绕拦截TjSession注解的方法
      */
-    @Around("@annotation(openThriftjsoaSession)")
-    public Object openThriftjsoaSession(ProceedingJoinPoint pjp, OpenThriftjsoaSession openThriftjsoaSession) throws Throwable {
+    @Around("@annotation(tjSession)")
+    public Object openTjSession(ProceedingJoinPoint pjp, TjSession tjSession) throws Throwable {
         Object result;
 
         Map<Class<?>, Boolean> autoCloseMap = new HashMap<>();
-        for (Class<?> it : openThriftjsoaSession.manualCloseClassArr()) {
+        for (Class<?> it : tjSession.manualCloseClassArr()) {
             autoCloseMap.put(it, false);
         }
-        for (Class<?> it : openThriftjsoaSession.autoCloseClassArr()) {
+        for (Class<?> it : tjSession.autoCloseClassArr()) {
             autoCloseMap.put(it, true);
         }
 
-        try (ThriftJsoaSession session = sessionFactory.openSession(autoCloseMap, openThriftjsoaSession.autoClose())) {
+        try (ThriftJsoaSession session = sessionFactory.openSession(autoCloseMap, tjSession.autoClose())) {
             result = pjp.proceed();
         }
         return result;

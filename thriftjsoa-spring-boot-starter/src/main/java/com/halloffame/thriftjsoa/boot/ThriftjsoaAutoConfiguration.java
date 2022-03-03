@@ -2,17 +2,28 @@ package com.halloffame.thriftjsoa.boot;
 
 import com.halloffame.thriftjsoa.ThriftJsoaProxy;
 import com.halloffame.thriftjsoa.ThriftJsoaServer;
+import com.halloffame.thriftjsoa.boot.annotation.EnableTjClients;
 import com.halloffame.thriftjsoa.boot.annotation.TjClient;
 import com.halloffame.thriftjsoa.boot.annotation.TjClientScan;
+import com.halloffame.thriftjsoa.boot.config.ThriftJsoaProxyConfig;
+import com.halloffame.thriftjsoa.boot.config.ThriftJsoaServerConfig;
 import com.halloffame.thriftjsoa.boot.config.TjExecutorService;
+import com.halloffame.thriftjsoa.boot.config.TjProxyExecutorService;
 import com.halloffame.thriftjsoa.boot.constant.ThriftjsoaConstant;
 import com.halloffame.thriftjsoa.boot.properties.ThriftjsoaProperties;
 import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaProxyRunner;
 import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaServerRunner;
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
+import com.halloffame.thriftjsoa.config.client.LoadBalanceClientConfig;
+import com.halloffame.thriftjsoa.config.client.ThriftJsoaClientConfig;
+import com.halloffame.thriftjsoa.config.common.ClientClassConfig;
+import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
 import com.halloffame.thriftjsoa.util.ClassUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TProcessor;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -28,8 +39,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * spring boot starter的AutoConfiguration
@@ -39,6 +53,7 @@ import java.util.Map;
 @ConditionalOnClass({ThriftJsoaServer.class, ThriftJsoaProxy.class})
 @EnableConfigurationProperties(ThriftjsoaProperties.class)
 @ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_PREFIX)
+@Slf4j
 public class ThriftjsoaAutoConfiguration {
 
     @Autowired
@@ -54,6 +69,66 @@ public class ThriftjsoaAutoConfiguration {
     @Autowired(required = false)
     private TjExecutorService tjExecutorService;
 
+    @Autowired(required = false)
+    private TjProxyExecutorService tjProxyExecutorService;
+
+    private BaseServerConfig serverConfig;
+
+    @PostConstruct
+    public void init() throws Exception {
+        ZooKeeper zk = null;
+        ThriftJsoaServerConfig server = thriftjsoaProperties.getServer();
+        ThriftJsoaProxyConfig proxy = thriftjsoaProperties.getProxy();
+
+        if (Objects.nonNull(server)) {
+            if (server.getSimpleServerConfig() != null) {
+                serverConfig = server.getSimpleServerConfig();
+            } else if (server.getThreadPoolServerConfig() != null) {
+                serverConfig = server.getThreadPoolServerConfig();
+            } else if (server.getNonblockingServerConfig() != null) {
+                serverConfig = server.getNonblockingServerConfig();
+            } else {
+                serverConfig = server.getThreadedSelectorServerConfig().setExecutorService(
+                        tjExecutorService != null ? tjExecutorService.getExecutorService() : null);
+            }
+            serverConfig.setProcessor(tProcessor);
+            zk = this.connZk(serverConfig.getZkConnConfig());
+            serverConfig.setZk(zk);
+        }
+        if (Objects.nonNull(proxy)) {
+            if (proxy.getSimpleServerConfig() != null) {
+                proxy.setServerConfig(proxy.getSimpleServerConfig());
+            } else if (proxy.getThreadPoolServerConfig() != null) {
+                proxy.setServerConfig(proxy.getThreadPoolServerConfig());
+            } else if (proxy.getNonblockingServerConfig() != null) {
+                proxy.setServerConfig(proxy.getNonblockingServerConfig());
+            } else {
+                proxy.setServerConfig(proxy.getThreadedSelectorServerConfig().setExecutorService(
+                        tjProxyExecutorService != null ? tjProxyExecutorService.getExecutorService() : null));
+            }
+            proxy.getServerConfig().setProcessor(tProcessor);
+            proxy.getServerConfig().setZk(zk);
+        }
+    }
+
+    /**
+     * 连接注册中心（zooKeeper）
+     */
+    private ZooKeeper connZk(ZkConnConfig zkConnConfig) throws Exception {
+        if (Objects.isNull(zkConnConfig)) {
+            return null;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ZooKeeper zk = new ZooKeeper(zkConnConfig.getZkConnStr(), zkConnConfig.getZkSessionTimeout(), event -> {
+            if (Watcher.Event.KeeperState.SyncConnected == event.getState()) {
+                countDownLatch.countDown();
+            }
+        });
+        countDownLatch.await();
+        log.info("zookeeper连接状态：{}", zk.getState()); //CONNECTED
+        return zk;
+    }
+
     /**
      * 服务端runner bean
      */
@@ -61,25 +136,7 @@ public class ThriftjsoaAutoConfiguration {
     @ConditionalOnMissingBean(ThriftjsoaServerRunner.class)
     @ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_SERVER_PREFIX)
     public ThriftjsoaServerRunner thriftjsoaServerRunner() {
-        BaseServerConfig serverConfig = null;
-
-        if (thriftjsoaProperties.getServer().getThreadedSelectorServerConfig() != null) {
-            thriftjsoaProperties.getServer().getThreadedSelectorServerConfig().setExecutorService(tjExecutorService.getExecutorService());
-            serverConfig = thriftjsoaProperties.getServer().getThreadedSelectorServerConfig();
-
-        } else if (thriftjsoaProperties.getServer().getNonblockingServerConfig() != null) {
-            serverConfig = thriftjsoaProperties.getServer().getNonblockingServerConfig();
-
-        } else if (thriftjsoaProperties.getServer().getThreadPoolServerConfig() != null) {
-            serverConfig = thriftjsoaProperties.getServer().getThreadPoolServerConfig();
-
-        } else if (thriftjsoaProperties.getServer().getSimpleServerConfig() != null) {
-            serverConfig = thriftjsoaProperties.getServer().getSimpleServerConfig();
-        }
-        serverConfig.setProcessor(tProcessor);
-
-        ThriftjsoaServerRunner runner = new ThriftjsoaServerRunner(new ThriftJsoaServer(serverConfig));
-        return runner;
+        return new ThriftjsoaServerRunner(new ThriftJsoaServer(serverConfig));
     }
 
     /**
@@ -89,21 +146,6 @@ public class ThriftjsoaAutoConfiguration {
     @ConditionalOnMissingBean(ThriftjsoaProxyRunner.class)
     @ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_PROXY_PREFIX)
     public ThriftjsoaProxyRunner thriftjsoaProxyRunner() {
-
-        if (thriftjsoaProperties.getProxy().getThreadedSelectorServerConfig() != null) {
-            thriftjsoaProperties.getProxy().getThreadedSelectorServerConfig().setExecutorService(tjExecutorService.getExecutorService());
-            thriftjsoaProperties.getProxy().setServerConfig(thriftjsoaProperties.getProxy().getThreadedSelectorServerConfig());
-
-        } else if (thriftjsoaProperties.getProxy().getNonblockingServerConfig() != null) {
-            thriftjsoaProperties.getProxy().setServerConfig(thriftjsoaProperties.getProxy().getNonblockingServerConfig());
-
-        } else if (thriftjsoaProperties.getProxy().getThreadPoolServerConfig() != null) {
-            thriftjsoaProperties.getProxy().setServerConfig(thriftjsoaProperties.getProxy().getThreadPoolServerConfig());
-
-        } else if (thriftjsoaProperties.getProxy().getSimpleServerConfig() != null) {
-            thriftjsoaProperties.getProxy().setServerConfig(thriftjsoaProperties.getProxy().getSimpleServerConfig());
-        }
-
         ThriftjsoaProxyRunner runner = new ThriftjsoaProxyRunner(new ThriftJsoaProxy(thriftjsoaProperties.getProxy()));
         return runner;
     }
@@ -113,35 +155,116 @@ public class ThriftjsoaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(ThriftJsoaSessionFactory.class)
-    @ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_CLIENT_PREFIX)
+    //@ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_CLIENT_PREFIX)
     public ThriftJsoaSessionFactory thriftJsoaSessionFactory() throws Exception {
-        if (thriftjsoaProperties.getServer() != null) {
-            thriftjsoaProperties.getClient().setInTjServer(true);
+        if (Objects.isNull(thriftjsoaProperties.getServer()) &&
+            Objects.isNull(thriftjsoaProperties.getClient())
+        ) {
+            return new ThriftJsoaSessionFactory();
+        }
+        ThriftJsoaClientConfig client = thriftjsoaProperties.getClient();
+        if (Objects.isNull(client)) {
+            client = new ThriftJsoaClientConfig();
+        }
+        if (Objects.nonNull(thriftjsoaProperties.getServer())) {
+            client.setInTjServer(true);
         }
 
-        String[] packageNames = null;
-        Map<String, Object> tjClientScanBeanMap = applicationContext.getBeansWithAnnotation(TjClientScan.class);
-        if (!tjClientScanBeanMap.isEmpty()) {
-            TjClientScan tjClientScan = tjClientScanBeanMap.values().toArray()[0].getClass().getAnnotation(TjClientScan.class);
-            packageNames = tjClientScan.value();
-        }
-        if (packageNames == null || packageNames.length == 0) {
-            packageNames = new String[1];
-            packageNames[0] = applicationContext.getBeansWithAnnotation(SpringBootApplication.class).values().toArray()[0]
-                    .getClass().getPackage().getName();
-        }
-        for (String packageName : packageNames) {
-            for (Class<?> clazz : ClassUtil.getClzFromPkg(packageName)) {
-                TjClient tjClient = clazz.getAnnotation(TjClient.class);
-                if (tjClient != null) {
-                    tjClient.value();
+        List<Class<?>> tjClientClassArr = new ArrayList<>();
+        if (!applicationContext.getBeansWithAnnotation(EnableTjClients.class).isEmpty()) {
+            String[] packageNames = null;
+            Map<String, Object> tjClientScanBeanMap = applicationContext.getBeansWithAnnotation(TjClientScan.class);
+            if (!tjClientScanBeanMap.isEmpty()) {
+                TjClientScan tjClientScan = tjClientScanBeanMap.values().toArray()[0].getClass().getAnnotation(TjClientScan.class);
+                packageNames = tjClientScan.value();
+            }
+            if (packageNames == null || packageNames.length == 0) {
+                packageNames = new String[1];
+                packageNames[0] = applicationContext.getBeansWithAnnotation(SpringBootApplication.class).values().toArray()[0]
+                        .getClass().getPackage().getName();
+            }
+
+            for (String packageName : packageNames) {
+                for (Class<?> clazz : ClassUtil.getClzFromPkg(packageName)) {
+                    TjClient tjClient = clazz.getAnnotation(TjClient.class);
+                    if (Objects.nonNull(tjClient)) {
+                        tjClientClassArr.add(clazz);
+                    }
                 }
-
-                thriftjsoaProperties.getClient().getList();
             }
         }
 
-        ThriftJsoaSessionFactory sessionFactory = new ThriftJsoaSessionFactory(thriftjsoaProperties.getClient());
+        List<LoadBalanceClientConfig> loadBalanceClientConfigs = client.getList();
+        if (Objects.isNull(loadBalanceClientConfigs)) {
+            loadBalanceClientConfigs = new ArrayList<>();
+            client.setList(loadBalanceClientConfigs);
+        }
+
+        Map<String, List<Class<?>>> tjClientClassMap = new HashMap<>();
+        for (Class<?> tjClientClass : tjClientClassArr) {
+            TjClient tjClient = tjClientClass.getAnnotation(TjClient.class);
+            if (StringUtils.isEmpty(tjClient.value())) {
+                continue;
+            }
+
+            List<Class<?>> tjClientClassSubArr = tjClientClassMap.computeIfAbsent(tjClient.value(), k -> new ArrayList<>());
+            tjClientClassSubArr.add(tjClientClass);
+        }
+
+        for (Map.Entry<String, List<Class<?>>> entry : tjClientClassMap.entrySet()) {
+            List<Class<?>> tjClientClassSubArr = entry.getValue();
+
+            boolean isFindCfg = false;
+            for (LoadBalanceClientConfig loadBalanceClientConfigIt : loadBalanceClientConfigs) {
+                if (Objects.equals(entry.getKey(), loadBalanceClientConfigIt.getName())) {
+
+                    for (Class<?> tjClientClass : tjClientClassSubArr) {
+                        TjClient tjClient = tjClientClass.getAnnotation(TjClient.class);
+
+                        boolean isFindClass = false;
+                        for (ClientClassConfig clientClassConfig : loadBalanceClientConfigIt.getClazzs()) {
+                            if (Objects.equals(tjClient.multipleServiceName(), clientClassConfig.getServiceName())) {
+                                if (StringUtils.isEmpty(clientClassConfig.getSessionName())) {
+                                    clientClassConfig.setSessionName(tjClientClass);
+                                }
+                                isFindClass = true;
+                                break;
+                            }
+                        }
+                        if (!isFindClass) {
+                            loadBalanceClientConfigIt.getClazzs().add(ClientClassConfig.builder()
+                                    .sessionName(tjClientClass).serviceName(tjClient.multipleServiceName()).build());
+                        }
+                    }
+
+                    isFindCfg = true;
+                    break;
+                }
+            }
+
+            if (!isFindCfg && Objects.nonNull(thriftjsoaProperties.getServer())) {
+                LoadBalanceClientConfig loadBalanceClientConfig = new LoadBalanceClientConfig();
+                List<ClientClassConfig> clazzs = new ArrayList<>();
+                for (Class<?> tjClientClass : tjClientClassSubArr) {
+                    TjClient tjClient = tjClientClass.getAnnotation(TjClient.class);
+                    clazzs.add(ClientClassConfig.builder().sessionName(tjClientClass).serviceName(tjClient.multipleServiceName()).build());
+                }
+
+                loadBalanceClientConfig.setClazzs(clazzs);
+                loadBalanceClientConfig.setLoadBalanceType(thriftjsoaProperties.getServer().getLoadBalanceType());
+                loadBalanceClientConfigs.add(loadBalanceClientConfig);
+            }
+        }
+
+        if (Objects.nonNull(serverConfig)) {
+            for (LoadBalanceClientConfig loadBalanceClientConfig : loadBalanceClientConfigs) {
+                if (Objects.isNull(loadBalanceClientConfig.getZkConnConfig())) {
+                    loadBalanceClientConfig.setZk(serverConfig.getZk());
+                }
+            }
+        }
+
+        ThriftJsoaSessionFactory sessionFactory = new ThriftJsoaSessionFactory(client);
 
         ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) applicationContext;
         DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) configurableApplicationContext.getBeanFactory();

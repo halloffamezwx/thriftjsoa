@@ -1,6 +1,10 @@
 package com.halloffame.thriftjsoa.config.common;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.apache.thrift.TServiceClient;
 
 /**
@@ -8,6 +12,10 @@ import org.apache.thrift.TServiceClient;
  * @author zhuwx
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Accessors(chain = true)
 public class ClientClassConfig {
 
     /**

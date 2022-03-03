@@ -20,6 +20,10 @@ import java.util.Map;
  */
 public class ThriftJsoaSessionFactory {
 
+    public ThriftJsoaSessionFactory() {
+
+    }
+
     public ThriftJsoaSessionFactory(ThriftJsoaClientConfig client) throws Exception {
         ThriftJsoaSessionData.IN_TJ_SERVER = client.isInTjServer();
 

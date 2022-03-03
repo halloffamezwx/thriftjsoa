@@ -5,6 +5,7 @@ import com.halloffame.thriftjsoa.config.common.ClientClassConfig;
 import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.constant.LoadBalanceType;
 import lombok.Data;
+import org.apache.zookeeper.ZooKeeper;
 
 import java.util.List;
 
@@ -14,6 +15,16 @@ import java.util.List;
  */
 @Data
 public class LoadBalanceClientConfig {
+
+    /**
+     * 名称，当注册中心是zookeeper，一般为请求服务注册的节点的父路径
+     */
+    private String name;
+
+    /**
+     * 注册中心（zookeeper）
+     */
+    private ZooKeeper zk;
 
     /**
      * 注册中心（zookeeper）连接配置
@@ -32,7 +43,7 @@ public class LoadBalanceClientConfig {
 
     /**
      * 负载均衡类型，建议使用：RANDOM_WEIGHT-随机（加权），clientConfigs只有一个的时候无需指定，默认不指定
-     * {@link LoadBalanceType}
+     * {@link LoadBalanceType#getCode()}
      */
     private String loadBalanceType;
 

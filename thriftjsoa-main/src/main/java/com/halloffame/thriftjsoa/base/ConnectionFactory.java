@@ -134,9 +134,16 @@ public class ConnectionFactory {
         result.setTProtocolMap(tProtocolMap);
 
         if (clientConfig.getClazzs() != null) {
+            boolean isMultiplexed = false;
+            for (ClientClassConfig clazzIt : clientConfig.getClazzs()) {
+                if (clazzIt.getServiceName() != null) {
+                    isMultiplexed = true;
+                    break;
+                }
+            }
             for (ClientClassConfig clazzIt : clientConfig.getClazzs()) {
                 TProtocol tProtocolFinal = tProtocol;
-                if (clientConfig.getClazzs().size() > 1) {
+                if (isMultiplexed) {
                     //如果是TMultiplexedProtocol，多个客户端对应同一个TProtocol
                     tProtocolFinal = new TMultiplexedProtocol(tProtocol, clazzIt.getServiceName());
                 }

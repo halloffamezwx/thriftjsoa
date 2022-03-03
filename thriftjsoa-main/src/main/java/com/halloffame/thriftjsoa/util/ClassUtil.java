@@ -37,8 +37,9 @@ public class ClassUtil {
                     findClassesByFile(pkg, filePath, classes);
 
                 } else if ("jar".equals(protocol)) {// 如果是jar包文件
-                    JarFile jar = ((JarURLConnection) url.openConnection()).getJarFile();
-                    findClassesByJar(pkg, jar, classes);
+                    try (JarFile jar = ((JarURLConnection) url.openConnection()).getJarFile()) {
+                        findClassesByJar(pkg, jar, classes);
+                    }
                 }
             }
         } catch (Exception e) {

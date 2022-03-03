@@ -1,6 +1,7 @@
 package com.halloffame.thriftjsoa.config;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.apache.thrift.TProcessor;
 
 /**
@@ -8,6 +9,7 @@ import org.apache.thrift.TProcessor;
  * @author zhuwx
  */
 @Data
+@Accessors(chain = true)
 public class BaseServerConfig extends BaseConfig {
 
     /**

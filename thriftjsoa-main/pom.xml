@@ -43,6 +43,17 @@
             <version>${zookeeper.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>${curator-framework.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>${curator-recipes.version}</version>
+        </dependency>
+
         <!-- jackson start -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

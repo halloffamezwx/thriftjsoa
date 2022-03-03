@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 客户端工具类
@@ -116,7 +117,10 @@ public class CommonClient {
             String zkRootPath = zkConnConfig.getZkRootPath();
             String zkNodePath = zkConnConfig.getZkNodePath();
 
-            ZooKeeper zk = new ZooKeeper(zkConnStr, zkSessionTimeout, null);
+            ZooKeeper zk = loadBalanceClientConfig.getZk();
+            if (Objects.isNull(zk)) {
+                zk = new ZooKeeper(zkConnStr, zkSessionTimeout, null);
+            }
             ThriftJsoaWatcher watcher = new ThriftJsoaWatcher(zk, zkRootPath, loadBalance, loadBalanceClientConfig);
             zk.register(watcher);
             result.setZk(zk);

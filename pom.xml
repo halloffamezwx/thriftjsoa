@@ -19,6 +19,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <zookeeper.version>3.4.10</zookeeper.version>
+        <curator-framework.version>5.2.0</curator-framework.version>
+        <curator-recipes.version>5.2.0</curator-recipes.version>
         <libthrift.version>0.9.3</libthrift.version>
         <commons-pool2.version>2.5.0</commons-pool2.version>
         <jackson-core.version>2.9.8</jackson-core.version>
@@ -41,7 +43,6 @@
         <module>thriftjsoa-boot-proxy-test</module>
         <module>thriftjsoa-boot-client-test</module>
         <module>thriftjsoa-interface-test</module>
-        <module>thriftjsoa-boot-webclient-test</module>
     </modules>
 
 </project>

@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-public @interface OpenThriftjsoaSession {
+public @interface TjSession {
 
     /**
      * 根据客户端class自动关闭连接资源等

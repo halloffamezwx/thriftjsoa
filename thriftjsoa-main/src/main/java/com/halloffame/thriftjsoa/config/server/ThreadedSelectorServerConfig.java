@@ -5,6 +5,7 @@ import com.halloffame.thriftjsoa.constant.ServerType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.util.concurrent.ExecutorService;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.ExecutorService;
  * @author zhuwx
  */
 @ToString
+@Accessors(chain = true)
 public class ThreadedSelectorServerConfig extends BaseServerConfig {
 
     /**

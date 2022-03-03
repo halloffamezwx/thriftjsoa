@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa.sample.client.service.impl;
 
-import com.halloffame.thriftjsoa.boot.annotation.OpenThriftjsoaSession;
+import com.halloffame.thriftjsoa.boot.annotation.TjSession;
 import com.halloffame.thriftjsoa.sample.client.service.ClientTestService;
 import com.halloffame.thriftjsoa.sample.iface.User;
 import com.halloffame.thriftjsoa.sample.iface.UserService;
@@ -27,7 +27,7 @@ public class ClientTestServiceImpl implements ClientTestService {
     /**
      * 客户端测试
      */
-    @OpenThriftjsoaSession
+    @TjSession
     @Override
     public void clientTest() throws Exception {
         UserService.Client generateUserClient = ThriftJsoaSessionData.SESSION_TL.get().createClient(UserService.Client.class);
