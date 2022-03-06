@@ -15,7 +15,6 @@ import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.*;
-import org.apache.zookeeper.ZooKeeper;
 
 /**
  * ThriftJsoa代理
@@ -29,11 +28,6 @@ public class ThriftJsoaProxy {
      */
     @Getter
     private BaseProxyConfig proxyConfig;
-
-    /**
-     * 注册中心（zookeeper）
-     */
-    private ZooKeeper zk;
 
     public ThriftJsoaProxy() {
         proxyConfig = new BaseProxyConfig();
@@ -54,7 +48,6 @@ public class ThriftJsoaProxy {
      */
     public void run() throws Exception {
         CreateLoadBalanceResult createLoadBalanceResult = CommonClient.createLoadBalance(proxyConfig.getLoadBalanceClientConfig());
-        zk = createLoadBalanceResult.getZk();
 
         TProcessor processor = proxyConfig.getServerConfig().getProcessor();
         if (processor == null) {

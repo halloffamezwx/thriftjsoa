@@ -17,11 +17,6 @@ import java.util.List;
 public class LoadBalanceClientConfig {
 
     /**
-     * 名称，当注册中心是zookeeper，一般为请求服务注册的节点的父路径
-     */
-    private String name;
-
-    /**
      * 注册中心（zookeeper）
      */
     private ZooKeeper zk;
@@ -29,7 +24,7 @@ public class LoadBalanceClientConfig {
     /**
      * 注册中心（zookeeper）连接配置
      */
-    private ZkConnConfig zkConnConfig = new ZkConnConfig();
+    private ZkConnConfig zkConnConfig;
 
     /**
      * 忽略注册中心（zookeeper）连接配置，需要提供连接的配置数据列表，负载均衡算法从这个列表选取一个

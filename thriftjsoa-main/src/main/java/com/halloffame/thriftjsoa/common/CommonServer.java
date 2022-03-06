@@ -20,12 +20,15 @@ import org.apache.thrift.protocol.*;
 import org.apache.thrift.server.*;
 import org.apache.thrift.transport.*;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.MDC;
 
 import java.net.InetAddress;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 启动不同类型的server
@@ -84,6 +87,7 @@ public class CommonServer {
      */
     public static void serve(BaseServerConfig serverConfig) throws Exception {
         ZkConnConfig zkConnConfig = serverConfig.getZkConnConfig();
+        ZooKeeper zk = serverConfig.getZk();
 
         InetAddress inetAddress = InetAddress.getLocalHost();
         String hostAddress = inetAddress.getHostAddress(); //本地ip
@@ -111,12 +115,10 @@ public class CommonServer {
             }
         }
 
-        if (zkConnConfig != null) { //连接zooKeeper创建节点
-            String zkConnStr = zkConnConfig.getZkConnStr();
-            int zkSessionTimeout = zkConnConfig.getZkSessionTimeout();
-
-            //创建一个与ZooKeeper服务器的连接
-            ZooKeeper zk = new ZooKeeper(zkConnStr, zkSessionTimeout, event -> log.debug("receive event : {}", event.getType().name()));
+        if (zk != null || zkConnConfig != null) { //需要连接zooKeeper创建节点
+            if (Objects.isNull(zk)) {
+                zk = connZk(zkConnConfig); //创建一个与ZooKeeper服务器的连接
+            }
 
             Stat stat = zk.exists(zkRootPath, false);
             if (stat == null) { //不存在就创建根节点
@@ -266,6 +268,24 @@ public class CommonServer {
 
         // Run it
         serverEngine.serve();
+    }
+
+    /**
+     * 连接注册中心（zooKeeper）
+     */
+    public static ZooKeeper connZk(ZkConnConfig zkConnConfig) throws Exception {
+        if (Objects.isNull(zkConnConfig)) {
+            return null;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ZooKeeper zk = new ZooKeeper(zkConnConfig.getZkConnStr(), zkConnConfig.getZkSessionTimeout(), event -> {
+            if (Watcher.Event.KeeperState.SyncConnected == event.getState()) {
+                countDownLatch.countDown();
+            }
+        });
+        countDownLatch.await();
+        log.info("zookeeper连接状态：{}", zk.getState()); //CONNECTED
+        return zk;
     }
 
     /**

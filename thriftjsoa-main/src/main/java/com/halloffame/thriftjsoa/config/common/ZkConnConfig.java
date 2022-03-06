@@ -2,12 +2,14 @@ package com.halloffame.thriftjsoa.config.common;
 
 import com.halloffame.thriftjsoa.common.CommonServer;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * 注册中心（zookeeper）连接配置
  * @author zhuwx
  */
 @Data
+@Accessors(chain = true)
 public class ZkConnConfig {
 
     /**
@@ -23,7 +25,7 @@ public class ZkConnConfig {
     /**
      * 连接串
      */
-    private String zkConnStr = CommonServer.ZK_CONN_STR;
+    private String zkConnStr; // = CommonServer.ZK_CONN_STR;
 
     /**
      * 会话的有效时间，单位是毫秒

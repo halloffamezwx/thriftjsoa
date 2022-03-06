@@ -1,5 +1,6 @@
 package com.halloffame.thriftjsoa.boot.annotation;
 
+import com.halloffame.thriftjsoa.common.CommonServer;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
@@ -14,16 +15,16 @@ import java.lang.annotation.*;
 public @interface TjClient {
 
     /**
-     * 请求的Tj服务端名
+     * 请求的Tj服务端在注册中心（zooKeeper）的根路径
      */
     @AliasFor("name")
-    String value() default "";
+    String value() default CommonServer.ZK_ROOT_PATH;
 
     /**
-     * 请求的Tj服务端名
+     * 请求的Tj服务端在注册中心（zooKeeper）的根路径
      */
     @AliasFor("value")
-    String name() default "";
+    String zkRootPath() default CommonServer.ZK_ROOT_PATH;
 
     /**
      * 用于TMultiplexedProtocol的SERVICE_NAME的自定义名称

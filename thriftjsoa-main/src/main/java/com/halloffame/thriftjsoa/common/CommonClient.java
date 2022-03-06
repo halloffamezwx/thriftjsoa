@@ -112,14 +112,12 @@ public class CommonClient {
         if (clientConfigs == null || clientConfigs.isEmpty()) {
             //连接注册中心（zooKeeper）读取节点信息建立与对应服务相通的连接工厂
             ZkConnConfig zkConnConfig = loadBalanceClientConfig.getZkConnConfig();
-            String zkConnStr = zkConnConfig.getZkConnStr();
-            int zkSessionTimeout = zkConnConfig.getZkSessionTimeout();
             String zkRootPath = zkConnConfig.getZkRootPath();
             String zkNodePath = zkConnConfig.getZkNodePath();
 
             ZooKeeper zk = loadBalanceClientConfig.getZk();
             if (Objects.isNull(zk)) {
-                zk = new ZooKeeper(zkConnStr, zkSessionTimeout, null);
+                zk = CommonServer.connZk(zkConnConfig);
             }
             ThriftJsoaWatcher watcher = new ThriftJsoaWatcher(zk, zkRootPath, loadBalance, loadBalanceClientConfig);
             zk.register(watcher);
