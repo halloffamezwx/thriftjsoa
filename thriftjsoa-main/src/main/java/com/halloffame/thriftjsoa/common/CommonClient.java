@@ -15,7 +15,10 @@ import com.halloffame.thriftjsoa.loadbalance.weight.LeastConnWeightLoadBalance;
 import com.halloffame.thriftjsoa.loadbalance.weight.PollingWeightLoadBalance;
 import com.halloffame.thriftjsoa.loadbalance.weight.RandomWeightLoadBalance;
 import com.halloffame.thriftjsoa.util.JsonUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.thrift.TServiceClient;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.zookeeper.WatchedEvent;
@@ -89,7 +92,7 @@ public class CommonClient {
         if (loadBalanceType != null && !"".equals(loadBalanceType.trim()) && LoadBalanceType.getByCode(loadBalanceType) == null) {
             throw new ThriftJsoaException(MsgCode.UNKNOWN_LOAD_BALANCE, loadBalanceType);
         }
-        LoadBalanceAbstract loadBalance = new LoadBalanceAbstract(){};
+        LoadBalanceAbstract loadBalance;
 
         if (LoadBalanceType.LEAST_CONN.getCode().equals(loadBalanceType)) {
             loadBalance = new LeastConnLoadBalance();
@@ -103,6 +106,8 @@ public class CommonClient {
             loadBalance = new PollingWeightLoadBalance();
         } else if (LoadBalanceType.RANDOM_WEIGHT.getCode().equals(loadBalanceType)) {
             loadBalance = new RandomWeightLoadBalance();
+        } else {
+            loadBalance = new LoadBalanceAbstract(){};
         }
         CreateLoadBalanceResult result = new CreateLoadBalanceResult();
         result.setLoadBalance(loadBalance);
@@ -113,26 +118,47 @@ public class CommonClient {
             //连接注册中心（zooKeeper）读取节点信息建立与对应服务相通的连接工厂
             ZkConnConfig zkConnConfig = loadBalanceClientConfig.getZkConnConfig();
             String zkRootPath = zkConnConfig.getZkRootPath();
-            String zkNodePath = zkConnConfig.getZkNodePath();
 
-            ZooKeeper zk = loadBalanceClientConfig.getZk();
-            if (Objects.isNull(zk)) {
-                zk = CommonServer.connZk(zkConnConfig);
+            CuratorFramework zkCf = loadBalanceClientConfig.getZkCf();
+            if (Objects.isNull(zkCf)) {
+                zkCf = CommonServer.connZkCf(zkConnConfig);
             }
-            ThriftJsoaWatcher watcher = new ThriftJsoaWatcher(zk, zkRootPath, loadBalance, loadBalanceClientConfig);
+
+            CuratorCache curatorCache = CuratorCache.builder(zkCf, zkRootPath).build();
+            curatorCache.listenable().addListener((type, oldData, newData) -> {
+                log.info("注册中心（zookeeper）监听事件：type={}, oldData={}, newData={}", type, oldData, newData);
+                switch (type) {
+                    case NODE_CREATED:
+                        loadBalance.addConnectionFactory(getConnectionFactory(newData.getData(), loadBalanceClientConfig));
+                        break;
+                    case NODE_DELETED:
+                        loadBalance.removeConnectionFactory(oldData.getPath());
+                        break;
+                    case NODE_CHANGED:
+                        loadBalance.removeConnectionFactory(oldData.getPath());
+                        loadBalance.addConnectionFactory(getConnectionFactory(newData.getData(), loadBalanceClientConfig));
+                        break;
+                    default:
+                        break;
+                }
+            });
+            curatorCache.start();
+
+            /* ThriftJsoaWatcher watcher = new ThriftJsoaWatcher(zk, zkRootPath, loadBalance, loadBalanceClientConfig);
             zk.register(watcher);
             result.setZk(zk);
-
+            String zkNodePath = zkConnConfig.getZkNodePath();
             if (zkNodePath == null || "".equals(zkNodePath.trim())) {
                 List<String> nodePaths = zk.getChildren(zkRootPath, true);
                 //todo 需要递归层级获取所有子节点？
                 log.info("zk-nodePaths={}", nodePaths);
                 for (String it : nodePaths) {
-                    loadBalance.addConnectionFactory(getConnectionFactory(zk, zkRootPath, "/" + it, loadBalanceClientConfig));
+                    loadBalance.addConnectionFactory(getConnectionFactory(
+                            zk, zkRootPath, "/" + it, loadBalanceClientConfig));
                 }
             } else {
                 loadBalance.addConnectionFactory(getConnectionFactory(zk, zkRootPath, zkNodePath, loadBalanceClientConfig));
-            }
+            } */
         } else {
             for (BaseClientConfig it : clientConfigs) {
                 //建立与服务对应的连接工厂
@@ -144,6 +170,24 @@ public class CommonClient {
         }
 
         return result;
+    }
+
+    /**
+     * 获取连接工厂
+     */
+    @SneakyThrows
+    private static ConnectionFactory getConnectionFactory(
+            byte[] zkNodeData, LoadBalanceClientConfig loadBalanceClientConfig) {
+        if (Objects.isNull(zkNodeData) || zkNodeData.length <= 0) {
+            return null;
+        }
+        String zkNodeStr = new String(zkNodeData, CommonServer.ZK_NODE_CHARSET);
+        BaseClientConfig zkNodeObj = JsonUtil.deserialize(zkNodeStr, BaseClientConfig.class);
+
+        zkNodeObj.setClazzs(loadBalanceClientConfig.getClazzs());
+        zkNodeObj.setInTjServer(loadBalanceClientConfig.isInTjServer());
+
+        return new ConnectionFactory(zkNodeObj);
     }
 
     /**

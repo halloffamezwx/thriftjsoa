@@ -5,7 +5,7 @@ import com.halloffame.thriftjsoa.config.common.ClientClassConfig;
 import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.constant.LoadBalanceType;
 import lombok.Data;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.util.List;
 
@@ -19,7 +19,12 @@ public class LoadBalanceClientConfig {
     /**
      * 注册中心（zookeeper）
      */
-    private ZooKeeper zk;
+    //private ZooKeeper zk;
+
+    /**
+     * 注册中心（zookeeper）- CuratorFramework
+     */
+    private CuratorFramework zkCf;
 
     /**
      * 注册中心（zookeeper）连接配置

@@ -6,6 +6,7 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 负载均衡抽象基类（加权）
@@ -24,10 +25,26 @@ public abstract class LoadBalanceWeightAbstract extends LoadBalanceAbstract {
      */
     @Override
     public void addConnectionFactory(ConnectionFactory connectionFactory) {
-        super.addConnectionFactory(connectionFactory);
+        if (Objects.nonNull(connectionFactory)) {
+            super.addConnectionFactory(connectionFactory);
 
-        for (int i = 0; i < connectionFactory.getMaxTotal(); i++) {
-            weightConnectionFactorys.add(connectionFactory);
+            for (int i = 0; i < connectionFactory.getMaxTotal(); i++) {
+                weightConnectionFactorys.add(connectionFactory);
+            }
+        }
+    }
+
+    /**
+     * 移除连接工厂
+     */
+    @Override
+    public void removeConnectionFactory(String path) {
+        Iterator<ConnectionFactory> it = getConnectionFactorys().iterator();
+        while (it.hasNext()) {
+            ConnectionFactory connectionFactory = it.next();
+            if (connectionFactory.toString().equals(path)) {
+                this.removeConnectionFactory(connectionFactory, it);
+            }
         }
     }
 

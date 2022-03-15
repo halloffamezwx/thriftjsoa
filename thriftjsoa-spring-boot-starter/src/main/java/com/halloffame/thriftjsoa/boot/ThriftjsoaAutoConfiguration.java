@@ -22,8 +22,8 @@ import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
 import com.halloffame.thriftjsoa.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.thrift.TProcessor;
-import org.apache.zookeeper.ZooKeeper;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -75,7 +75,8 @@ public class ThriftjsoaAutoConfiguration {
 
     @PostConstruct
     public void init() throws Exception {
-        ZooKeeper zk = null;
+        CuratorFramework zkCf = null;
+        ZkConnConfig zkConnConfig = null;
         ThriftJsoaServerConfig server = thriftjsoaProperties.getServer();
         ThriftJsoaProxyConfig proxy = thriftjsoaProperties.getProxy();
 
@@ -91,8 +92,9 @@ public class ThriftjsoaAutoConfiguration {
                         tjExecutorService != null ? tjExecutorService.getExecutorService() : null);
             }
             serverConfig.setProcessor(tProcessor);
-            zk = CommonServer.connZk(serverConfig.getZkConnConfig());
-            serverConfig.setZk(zk);
+            zkConnConfig = serverConfig.getZkConnConfig();
+            zkCf = CommonServer.connZkCf(zkConnConfig);
+            serverConfig.setZkCf(zkCf);
         }
         if (Objects.nonNull(proxy)) {
             if (proxy.getSimpleServerConfig() != null) {
@@ -108,17 +110,21 @@ public class ThriftjsoaAutoConfiguration {
             BaseServerConfig baseServerConfig = proxy.getServerConfig();
             baseServerConfig.setProcessor(tProcessor);
 
-            ZooKeeper proxyZk = zk;
+            CuratorFramework proxyZkCf = zkCf;
+            ZkConnConfig proxyZkConnConfig = zkConnConfig;
             LoadBalanceClientConfig loadBalanceClientConfig = proxy.getLoadBalanceClientConfig();
             if (Objects.nonNull(loadBalanceClientConfig.getZkConnConfig())) {
-                proxyZk = CommonServer.connZk(loadBalanceClientConfig.getZkConnConfig());
+                proxyZkConnConfig = loadBalanceClientConfig.getZkConnConfig();
+                proxyZkCf = CommonServer.connZkCf(proxyZkConnConfig);
             }
-            loadBalanceClientConfig.setZk(proxyZk);
+            loadBalanceClientConfig.setZkConnConfig(proxyZkConnConfig);
+            loadBalanceClientConfig.setZkCf(proxyZkCf);
 
             if (Objects.isNull(baseServerConfig.getZkConnConfig())) {
-                baseServerConfig.setZk(proxyZk);
+                baseServerConfig.setZkConnConfig(proxyZkConnConfig);
+                baseServerConfig.setZkCf(proxyZkCf);
             } else {
-                baseServerConfig.setZk(CommonServer.connZk(baseServerConfig.getZkConnConfig()));
+                baseServerConfig.setZkCf(CommonServer.connZkCf(baseServerConfig.getZkConnConfig()));
             }
         }
     }
@@ -266,7 +272,7 @@ public class ThriftjsoaAutoConfiguration {
             for (LoadBalanceClientConfig loadBalanceClientConfig : loadBalanceClientConfigs) {
                 ZkConnConfig zkConnConfig = loadBalanceClientConfig.getZkConnConfig();
                 if (Objects.isNull(zkConnConfig) || StringUtils.isEmpty(zkConnConfig.getZkConnStr())) {
-                    loadBalanceClientConfig.setZk(serverConfig.getZk());
+                    loadBalanceClientConfig.setZkCf(serverConfig.getZkCf());
                 }
             }
         }

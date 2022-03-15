@@ -7,6 +7,7 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 负载均衡抽象基类
@@ -24,7 +25,22 @@ public abstract class LoadBalanceAbstract {
      * 新增连接工厂
      */
     public void addConnectionFactory(ConnectionFactory connectionFactory) {
-        connectionFactorys.add(connectionFactory);
+        if (Objects.nonNull(connectionFactory)) {
+            connectionFactorys.add(connectionFactory);
+        }
+    }
+
+    /**
+     * 移除连接工厂
+     */
+    public void removeConnectionFactory(String path) {
+        Iterator<ConnectionFactory> it = connectionFactorys.iterator();
+        while (it.hasNext()) {
+            ConnectionFactory connectionFactory = it.next();
+            if (connectionFactory.toString().equals(path)) {
+                this.removeConnectionFactory(connectionFactory, it);
+            }
+        }
     }
 
     /**

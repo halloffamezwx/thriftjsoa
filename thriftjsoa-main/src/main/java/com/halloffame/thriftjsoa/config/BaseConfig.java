@@ -5,7 +5,7 @@ import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.constant.ProtocolType;
 import com.halloffame.thriftjsoa.constant.TransportType;
 import lombok.Data;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.framework.CuratorFramework;
 
 /**
  * 基础配置
@@ -57,5 +57,10 @@ public class BaseConfig {
     /**
      * 注册中心（zookeeper）
      */
-    private ZooKeeper zk;
+    //private ZooKeeper zk;
+
+    /**
+     * 注册中心（zookeeper）- CuratorFramework
+     */
+    private CuratorFramework zkCf;
 }

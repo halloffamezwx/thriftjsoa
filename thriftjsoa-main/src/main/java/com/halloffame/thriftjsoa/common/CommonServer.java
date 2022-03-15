@@ -15,13 +15,15 @@ import com.halloffame.thriftjsoa.constant.TransportType;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.server.*;
 import org.apache.thrift.transport.*;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.MDC;
@@ -87,7 +89,7 @@ public class CommonServer {
      */
     public static void serve(BaseServerConfig serverConfig) throws Exception {
         ZkConnConfig zkConnConfig = serverConfig.getZkConnConfig();
-        ZooKeeper zk = serverConfig.getZk();
+        CuratorFramework zkCf = serverConfig.getZkCf();
 
         InetAddress inetAddress = InetAddress.getLocalHost();
         String hostAddress = inetAddress.getHostAddress(); //本地ip
@@ -115,14 +117,16 @@ public class CommonServer {
             }
         }
 
-        if (zk != null || zkConnConfig != null) { //需要连接zooKeeper创建节点
-            if (Objects.isNull(zk)) {
-                zk = connZk(zkConnConfig); //创建一个与ZooKeeper服务器的连接
+        if (zkCf != null || zkConnConfig != null) { //需要连接zooKeeper创建节点
+            if (Objects.isNull(zkCf)) {
+                zkCf = connZkCf(zkConnConfig); //创建一个与ZooKeeper服务器的连接
             }
 
-            Stat stat = zk.exists(zkRootPath, false);
+            //Stat stat = zk.exists(zkRootPath, false);
+            Stat stat = zkCf.checkExists().forPath(zkRootPath);
             if (stat == null) { //不存在就创建根节点
-                zk.create(zkRootPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                //zk.create(zkRootPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zkCf.create().forPath(zkRootPath);
             }
 
             //注册中心（zookeeper）节点保存的数据，client/proxy将会读取这些数据来进行一些操作，例如创建client/proxy连接server的连接工厂等
@@ -143,8 +147,10 @@ public class CommonServer {
             zkClientConnServerConfig.setZkConnConfig(serverConfig.getZkConnConfig());
 
             //创建一个子节点
-            zk.create(path, JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET),
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            //zk.create(path, JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET),
+            //        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            zkCf.create().withMode(CreateMode.EPHEMERAL).forPath(path,
+                    JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET));
         }
 
         int port = serverConfig.getPort();
@@ -286,6 +292,18 @@ public class CommonServer {
         countDownLatch.await();
         log.info("zookeeper连接状态：{}", zk.getState()); //CONNECTED
         return zk;
+    }
+
+    /**
+     * 连接注册中心（zooKeeper）- CuratorFramework
+     */
+    public static CuratorFramework connZkCf(ZkConnConfig zkConnConfig) {
+        CuratorFramework curatorFramework = CuratorFrameworkFactory.builder()
+                .connectString(zkConnConfig.getZkConnStr()).sessionTimeoutMs(zkConnConfig.getZkSessionTimeout())
+                .retryPolicy(new ExponentialBackoffRetry(1000,3))
+                .namespace("").build();
+        curatorFramework.start();
+        return curatorFramework;
     }
 
     /**
