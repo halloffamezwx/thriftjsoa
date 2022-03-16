@@ -1,6 +1,7 @@
 package com.halloffame.thriftjsoa.boot.runner;
 
 import com.halloffame.thriftjsoa.ThriftJsoaProxy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
@@ -8,6 +9,7 @@ import org.springframework.boot.ApplicationRunner;
  * 代理Runner
  * @author zhuwx
  */
+@Slf4j
 public class ThriftjsoaProxyRunner implements ApplicationRunner {
 
     private ThriftJsoaProxy thirftJsoaProxy;
@@ -18,7 +20,13 @@ public class ThriftjsoaProxyRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        thirftJsoaProxy.run();
+        new Thread(() -> {
+            try {
+                thirftJsoaProxy.run();
+            } catch (Exception e) {
+                log.error("代理端启动异常：", e);
+            }
+        }).start();
     }
 
 }
