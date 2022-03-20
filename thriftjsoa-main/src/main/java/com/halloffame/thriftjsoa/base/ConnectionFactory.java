@@ -20,6 +20,7 @@ import org.apache.thrift.transport.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 连接工厂类
@@ -34,9 +35,9 @@ public class ConnectionFactory {
     private final String validateExceptionMsg; //检查TProtocol连接对象的有效性期待服务端返回的错误消息
 
     /**
-     * 主机 + "-" +  端口
+     * 服务app标识
      */
-    private final String hostStr;
+    private final String appId;
 
     /**
      * 连接池
@@ -56,7 +57,7 @@ public class ConnectionFactory {
         }
 
         this.clientConfig = clientConfig;
-        this.hostStr = clientConfig.getHost() + CommonServer.ZK_NODE_SEPARATOR + clientConfig.getPort();
+        this.appId = CommonServer.genAppId(clientConfig);
         this.validateExceptionMsg = "Invalid method name: '" + clientConfig.getConnValidateMethodName() + "'";
 
         if (clientConfig.getPoolConfig() != null) {
@@ -68,17 +69,22 @@ public class ConnectionFactory {
     @Override
     public String toString() {
         ZkConnConfig zkConnConfig = clientConfig.getZkConnConfig();
-        if (zkConnConfig == null) {
-            return hostStr;
-        } else {
-            String zkRootPath = zkConnConfig.getZkRootPath();
-            String zkNodePath = zkConnConfig.getZkNodePath();
-            if (zkNodePath == null || "".equals(zkNodePath.trim())) {
-                return zkRootPath + "/" + hostStr;
-            } else {
-                return zkRootPath + zkNodePath;
-            }
+        return String.format("%s, %s, %s", zkConnConfig.getZkRootPath(), zkConnConfig.getZkNodePath(), appId);
+    }
+
+    /**
+     * 是否同一个连接工厂
+     */
+    public boolean isSame(String path, String appIdIn) {
+        ZkConnConfig zkConnConfig = clientConfig.getZkConnConfig();
+        String zkPath = zkConnConfig.getZkRootPath() + zkConnConfig.getZkNodePath();
+
+        if (Objects.equals(path, zkPath) || Objects.equals(path, this.appId) ||
+            Objects.equals(appIdIn, this.appId) || Objects.equals(appIdIn, zkPath))
+        {
+            return true;
         }
+        return false;
     }
 
     public void destroy() {
@@ -119,7 +125,7 @@ public class ConnectionFactory {
         double numActive = getNumActive();
         double maxTotal = getMaxTotal();
         double result = numActive / maxTotal;
-        log.debug("thriftjsoa ConnectionFactory {} getWeight: {} / {} = {}", hostStr, numActive, maxTotal, result);
+        log.debug("thriftjsoa ConnectionFactory {} getWeight: {} / {} = {}", this, numActive, maxTotal, result);
         return result;
     }
 

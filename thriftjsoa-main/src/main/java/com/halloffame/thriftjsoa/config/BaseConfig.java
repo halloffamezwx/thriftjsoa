@@ -20,6 +20,11 @@ public class BaseConfig {
     private String appId;
 
     /**
+     * 主机
+     */
+    private String host; // = "localhost";
+
+    /**
      * 端口
      */
     private int port = CommonServer.PORT;

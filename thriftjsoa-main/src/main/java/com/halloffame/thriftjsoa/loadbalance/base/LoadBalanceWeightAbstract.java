@@ -38,11 +38,11 @@ public abstract class LoadBalanceWeightAbstract extends LoadBalanceAbstract {
      * 移除连接工厂
      */
     @Override
-    public void removeConnectionFactory(String path) {
+    public void removeConnectionFactory(String path, String appId) {
         Iterator<ConnectionFactory> it = getConnectionFactorys().iterator();
         while (it.hasNext()) {
             ConnectionFactory connectionFactory = it.next();
-            if (connectionFactory.toString().equals(path)) {
+            if (connectionFactory.isSame(path, appId)) {
                 this.removeConnectionFactory(connectionFactory, it);
             }
         }

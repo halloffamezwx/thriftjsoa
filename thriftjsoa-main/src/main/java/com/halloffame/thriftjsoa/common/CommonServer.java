@@ -4,6 +4,7 @@ import com.halloffame.thriftjsoa.base.ThriftJsoaException;
 import com.halloffame.thriftjsoa.base.ThriftJsoaProcessor;
 import com.halloffame.thriftjsoa.base.ThriftJsoaProtocol;
 import com.halloffame.thriftjsoa.config.BaseClientConfig;
+import com.halloffame.thriftjsoa.config.BaseConfig;
 import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.config.server.ThreadPoolServerConfig;
@@ -14,6 +15,7 @@ import com.halloffame.thriftjsoa.constant.ServerType;
 import com.halloffame.thriftjsoa.constant.TransportType;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -88,70 +90,13 @@ public class CommonServer {
      * 根据配置启动不同类型的server
      */
     public static void serve(BaseServerConfig serverConfig) throws Exception {
-        ZkConnConfig zkConnConfig = serverConfig.getZkConnConfig();
-        CuratorFramework zkCf = serverConfig.getZkCf();
-
-        InetAddress inetAddress = InetAddress.getLocalHost();
-        String hostAddress = inetAddress.getHostAddress(); //本地ip
-
-        String zkRootPath = null;
-        String zkNodePath = null;
-        if (zkConnConfig != null) {
-            zkRootPath = zkConnConfig.getZkRootPath();
-            zkNodePath = zkConnConfig.getZkNodePath();
-
-            if (zkNodePath == null || "".equals(zkNodePath.trim())) {
-                zkNodePath = "/" + hostAddress + ZK_NODE_SEPARATOR + serverConfig.getPort();
-            }
+        if (Objects.isNull(serverConfig.getHost()) || "".equals(serverConfig.getHost().trim())) {
+            InetAddress inetAddress = InetAddress.getLocalHost();
+            String hostAddress = inetAddress.getHostAddress(); //本地ip
+            serverConfig.setHost(hostAddress);
         }
-        String path = zkRootPath + zkNodePath;
-
-        String appId = serverConfig.getAppId();
-        if (appId != null && !"".equals(appId.trim())) {
-            CommonServer.appId = appId;
-        } else {
-            if (zkConnConfig != null) {
-                CommonServer.appId = path;
-            } else {
-                CommonServer.appId = hostAddress + ZK_NODE_SEPARATOR + serverConfig.getPort();
-            }
-        }
-
-        if (zkCf != null || zkConnConfig != null) { //需要连接zooKeeper创建节点
-            if (Objects.isNull(zkCf)) {
-                zkCf = connZkCf(zkConnConfig); //创建一个与ZooKeeper服务器的连接
-            }
-
-            //Stat stat = zk.exists(zkRootPath, false);
-            Stat stat = zkCf.checkExists().forPath(zkRootPath);
-            if (stat == null) { //不存在就创建根节点
-                //zk.create(zkRootPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                zkCf.create().forPath(zkRootPath);
-            }
-
-            //注册中心（zookeeper）节点保存的数据，client/proxy将会读取这些数据来进行一些操作，例如创建client/proxy连接server的连接工厂等
-            BaseClientConfig zkClientConnServerConfig = serverConfig.getZkClientConnServerConfig();
-            if (zkClientConnServerConfig == null) {
-                zkClientConnServerConfig = new BaseClientConfig();
-            }
-            zkClientConnServerConfig.setHost(hostAddress);
-            //zkClientConnServerConfig.setSocketTimeOut(0);
-            //zkClientConnServerConfig.setPoolConfig(null);
-            zkClientConnServerConfig.setAppId(CommonServer.appId);
-            zkClientConnServerConfig.setPort(serverConfig.getPort());
-            zkClientConnServerConfig.setSsl(serverConfig.isSsl());
-            zkClientConnServerConfig.setTransportType(serverConfig.getTransportType());
-            zkClientConnServerConfig.setProtocolType(serverConfig.getProtocolType());
-            zkClientConnServerConfig.setConnValidateMethodName(serverConfig.getConnValidateMethodName());
-            zkClientConnServerConfig.setHttpPath(serverConfig.getHttpPath());
-            zkClientConnServerConfig.setZkConnConfig(serverConfig.getZkConnConfig());
-
-            //创建一个子节点
-            //zk.create(path, JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET),
-            //        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-            zkCf.create().withMode(CreateMode.EPHEMERAL).forPath(path,
-                    JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET));
-        }
+        appId = genAppId(serverConfig);
+        //serverConfig.setAppId(appId);
 
         int port = serverConfig.getPort();
         boolean ssl = serverConfig.isSsl(); //传输是否加密
@@ -272,15 +217,118 @@ public class CommonServer {
         //Set server event handler
         serverEngine.setServerEventHandler(new ThriftJsoaServerEventHandler());
 
+        final CuratorFramework zkCf;
+        if (Objects.nonNull(serverConfig.getZkCf())) {
+            zkCf = serverConfig.getZkCf();
+        } else {
+            zkCf = connZkCf(serverConfig.getZkConnConfig()); //创建一个与ZooKeeper服务器的连接
+        }
+
+        Thread gracefulShutdownThread = new GracefulShutdownThread(zkCf, serverEngine, serverConfig);
+        gracefulShutdownThread.setDaemon(true);
+        Runtime.getRuntime().addShutdownHook(gracefulShutdownThread);
+
+        Thread registerThread = new Thread(() -> {
+            int i = 0;
+            do {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    log.error("", e);
+                }
+            } while (!serverEngine.isServing() && i++ < 50);
+
+            if (serverEngine.isServing()) {
+                registerZk(zkCf, serverConfig);
+                log.info("注册节点（zookeeper）完毕");
+            } else {
+                log.info("服务启动超时");
+                serverEngine.stop();
+            }
+        });
+        registerThread.setDaemon(true);
+        if (Objects.nonNull(zkCf)) {
+            registerThread.start();
+        }
+
         // Run it
         serverEngine.serve();
+    }
+
+    /**
+     * 生成appId
+     */
+    public static String genAppId(BaseConfig baseConfig) {
+        if (Objects.nonNull(baseConfig.getAppId()) && !"".equals(baseConfig.getAppId().trim())) {
+            return baseConfig.getAppId();
+        }
+        ZkConnConfig zkConnConfig = baseConfig.getZkConnConfig();
+        if (Objects.isNull(zkConnConfig)) {
+            zkConnConfig = new ZkConnConfig();
+            baseConfig.setZkConnConfig(zkConnConfig);
+        }
+
+        if (Objects.isNull(zkConnConfig.getZkRootPath()) || "".equals(zkConnConfig.getZkRootPath().trim())) {
+            zkConnConfig.setZkRootPath(ZK_ROOT_PATH);
+        }
+        if (Objects.isNull(zkConnConfig.getZkNodePath()) || "".equals(zkConnConfig.getZkNodePath().trim())) {
+            zkConnConfig.setZkNodePath("/" + baseConfig.getHost() + ZK_NODE_SEPARATOR + baseConfig.getPort());
+        }
+
+        return zkConnConfig.getZkRootPath() + zkConnConfig.getZkNodePath();
+    }
+
+    /**
+     * 优雅停机线程
+     */
+    static class GracefulShutdownThread extends Thread {
+        private CuratorFramework zkCf;
+        private TServer serverEngine;
+        private BaseServerConfig serverConfig;
+
+        public GracefulShutdownThread(CuratorFramework zkCf, TServer serverEngine, BaseServerConfig serverConfig) {
+            this.zkCf = zkCf;
+            this.serverEngine = serverEngine;
+            this.serverConfig = serverConfig;
+        }
+
+        @Override
+        public void run() {
+            log.info("收到关闭服务的信号");
+            ZkConnConfig zkConnConfig = serverConfig.getZkConnConfig();
+            String path = zkConnConfig.getZkRootPath() + zkConnConfig.getZkNodePath();
+            try {
+                if (Objects.nonNull(zkCf)) {
+                    zkCf.delete().forPath(path);
+                }
+            } catch (Exception e) {
+                log.error("删除注册中心（zookeeper）节点异常：", e);
+                serverEngine.stop();
+                return;
+            }
+            serverEngine.setShouldStop(true);
+
+            int i = 0;
+            while (serverEngine.isServing() && i++ < serverConfig.getShutdownCheckFrequency()) {
+                log.info("服务正在忙{}x{}...", i, serverConfig.getShutdownCheckIntervalTime());
+                try {
+                    Thread.sleep(serverConfig.getShutdownCheckIntervalTime());
+                } catch (InterruptedException e) {
+                    log.error("", e);
+                }
+            }
+            if (serverEngine.isServing()) {
+                log.info("服务关闭超时");
+                serverEngine.stop();
+            }
+        }
     }
 
     /**
      * 连接注册中心（zooKeeper）
      */
     public static ZooKeeper connZk(ZkConnConfig zkConnConfig) throws Exception {
-        if (Objects.isNull(zkConnConfig)) {
+        if (Objects.isNull(zkConnConfig) || Objects.isNull(zkConnConfig.getZkConnStr()) || "".equals(zkConnConfig.getZkConnStr().trim())) {
             return null;
         }
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -298,12 +346,58 @@ public class CommonServer {
      * 连接注册中心（zooKeeper）- CuratorFramework
      */
     public static CuratorFramework connZkCf(ZkConnConfig zkConnConfig) {
+        if (Objects.isNull(zkConnConfig) || Objects.isNull(zkConnConfig.getZkConnStr()) || "".equals(zkConnConfig.getZkConnStr().trim())) {
+            return null;
+        }
         CuratorFramework curatorFramework = CuratorFrameworkFactory.builder()
                 .connectString(zkConnConfig.getZkConnStr()).sessionTimeoutMs(zkConnConfig.getZkSessionTimeout())
                 .retryPolicy(new ExponentialBackoffRetry(1000,3))
                 .namespace("").build();
         curatorFramework.start();
         return curatorFramework;
+    }
+
+    /**
+     * 注册节点（zookeeper）
+     */
+    @SneakyThrows
+    private static void registerZk(CuratorFramework zkCf, BaseServerConfig serverConfig) {
+        if (Objects.nonNull(zkCf)) { //需要在zooKeeper创建节点
+            ZkConnConfig zkConnConfig = serverConfig.getZkConnConfig();
+            String zkRootPath = zkConnConfig.getZkRootPath();
+            String zkNodePath = zkConnConfig.getZkNodePath();
+            String path = zkRootPath + zkNodePath;
+
+            //Stat stat = zk.exists(zkRootPath, false);
+            Stat stat = zkCf.checkExists().forPath(zkRootPath);
+            if (stat == null) { //不存在就创建根节点
+                //zk.create(zkRootPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                zkCf.create().forPath(zkRootPath);
+            }
+
+            //注册中心（zookeeper）节点保存的数据，client/proxy将会读取这些数据来进行一些操作，例如创建client/proxy连接server的连接工厂等
+            BaseClientConfig zkClientConnServerConfig = serverConfig.getZkClientConnServerConfig();
+            if (zkClientConnServerConfig == null) {
+                zkClientConnServerConfig = new BaseClientConfig();
+            }
+            zkClientConnServerConfig.setHost(serverConfig.getHost());
+            //zkClientConnServerConfig.setSocketTimeOut(0);
+            //zkClientConnServerConfig.setPoolConfig(null);
+            zkClientConnServerConfig.setAppId(appId);
+            zkClientConnServerConfig.setPort(serverConfig.getPort());
+            zkClientConnServerConfig.setSsl(serverConfig.isSsl());
+            zkClientConnServerConfig.setTransportType(serverConfig.getTransportType());
+            zkClientConnServerConfig.setProtocolType(serverConfig.getProtocolType());
+            zkClientConnServerConfig.setConnValidateMethodName(serverConfig.getConnValidateMethodName());
+            zkClientConnServerConfig.setHttpPath(serverConfig.getHttpPath());
+            zkClientConnServerConfig.setZkConnConfig(zkConnConfig);
+
+            //创建一个子节点
+            //zk.create(path, JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET),
+            //        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            zkCf.create().withMode(CreateMode.EPHEMERAL).forPath(path,
+                    JsonUtil.serialize(zkClientConnServerConfig).getBytes(CommonServer.ZK_NODE_CHARSET));
+        }
     }
 
     /**

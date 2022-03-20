@@ -27,4 +27,14 @@ public class BaseServerConfig extends BaseConfig {
      */
     private BaseClientConfig zkClientConnServerConfig;
 
+    /**
+     * 优雅停机检查服务状态的次数
+     */
+    private int shutdownCheckFrequency = 10;
+
+    /**
+     * 优雅停机检查服务状态的间隔时间，单位：ms
+     */
+    private long shutdownCheckIntervalTime = 1000L;
+
 }

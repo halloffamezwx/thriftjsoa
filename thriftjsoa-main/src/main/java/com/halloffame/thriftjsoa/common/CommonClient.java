@@ -132,10 +132,10 @@ public class CommonClient {
                         loadBalance.addConnectionFactory(getConnectionFactory(newData.getData(), loadBalanceClientConfig));
                         break;
                     case NODE_DELETED:
-                        loadBalance.removeConnectionFactory(oldData.getPath());
+                        removeConnectionFactory(loadBalance, oldData.getPath(), oldData.getData());
                         break;
                     case NODE_CHANGED:
-                        loadBalance.removeConnectionFactory(oldData.getPath());
+                        removeConnectionFactory(loadBalance, oldData.getPath(), oldData.getData());
                         loadBalance.addConnectionFactory(getConnectionFactory(newData.getData(), loadBalanceClientConfig));
                         break;
                     default:
@@ -170,6 +170,20 @@ public class CommonClient {
         }
 
         return result;
+    }
+
+    /**
+     * 移除连接工厂
+     */
+    @SneakyThrows
+    private static void removeConnectionFactory(LoadBalanceAbstract loadBalance, String path, byte[] zkNodeData) {
+        String appId = null;
+        if (Objects.nonNull(zkNodeData) && zkNodeData.length > 0) {
+            String zkNodeStr = new String(zkNodeData, CommonServer.ZK_NODE_CHARSET);
+            BaseClientConfig zkNodeObj = JsonUtil.deserialize(zkNodeStr, BaseClientConfig.class);
+            appId = zkNodeObj.getAppId();
+        }
+        loadBalance.removeConnectionFactory(path, appId);
     }
 
     /**

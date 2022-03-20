@@ -23,7 +23,7 @@ public class ThriftJsoaServerConfig {
     private SimpleServerConfig simpleServerConfig;
 
     /**
-     * 负载均衡类型，建议使用：RANDOM_WEIGHT-随机（加权），默认不指定
+     * 注解类客户端的负载均衡类型，建议使用：RANDOM_WEIGHT-随机（加权），默认不指定
      * @see LoadBalanceType#getCode()
      */
     private String loadBalanceType;

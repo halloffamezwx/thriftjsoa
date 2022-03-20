@@ -33,11 +33,11 @@ public abstract class LoadBalanceAbstract {
     /**
      * 移除连接工厂
      */
-    public void removeConnectionFactory(String path) {
+    public void removeConnectionFactory(String path, String appId) {
         Iterator<ConnectionFactory> it = connectionFactorys.iterator();
         while (it.hasNext()) {
             ConnectionFactory connectionFactory = it.next();
-            if (connectionFactory.toString().equals(path)) {
+            if (connectionFactory.isSame(path, appId)) {
                 this.removeConnectionFactory(connectionFactory, it);
             }
         }

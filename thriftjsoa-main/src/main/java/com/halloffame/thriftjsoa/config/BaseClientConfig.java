@@ -15,11 +15,6 @@ import java.util.List;
 public class BaseClientConfig extends BaseConfig {
 
     /**
-     * 主机
-     */
-    private String host = "localhost";
-
-    /**
      * socket读超时时间
      */
     private int socketTimeOut = CommonClient.SOCKET_TIME_OUT;
