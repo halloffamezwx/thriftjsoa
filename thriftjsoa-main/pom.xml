@@ -55,6 +55,12 @@
             <version>${curator-recipes.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>${tomcat-embed-core.version}</version>
+        </dependency>
+
         <!-- jackson start -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

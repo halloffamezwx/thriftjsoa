@@ -11,6 +11,7 @@ import lombok.ToString;
 @ToString
 public enum ServerType {
 
+    HTTP_TOMCAT("http-tomcat", "tomcat实现的http"),
     SIMPLE("simple", "单线程阻塞io"),
     THREAD_POOL("thread-pool", "多线程（池）阻塞io"),
     NONBLOCKING("nonblocking", "单条线程非阻塞io"),

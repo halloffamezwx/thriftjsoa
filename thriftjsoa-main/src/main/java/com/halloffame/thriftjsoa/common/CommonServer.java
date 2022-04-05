@@ -9,10 +9,12 @@ import com.halloffame.thriftjsoa.config.BaseServerConfig;
 import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
 import com.halloffame.thriftjsoa.config.server.ThreadPoolServerConfig;
 import com.halloffame.thriftjsoa.config.server.ThreadedSelectorServerConfig;
+import com.halloffame.thriftjsoa.config.server.TomcatServerConfig;
 import com.halloffame.thriftjsoa.constant.MsgCode;
 import com.halloffame.thriftjsoa.constant.ProtocolType;
 import com.halloffame.thriftjsoa.constant.ServerType;
 import com.halloffame.thriftjsoa.constant.TransportType;
+import com.halloffame.thriftjsoa.server.TTomcatServer;
 import com.halloffame.thriftjsoa.util.JsonUtil;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -180,7 +182,7 @@ public class CommonServer {
 
                 serverEngine = new TThreadedSelectorServer(tThreadedSelectorServerArgs);
             }
-        } else {
+        } else if (ServerType.SIMPLE.getCode().equals(serverType) || ServerType.THREAD_POOL.getCode().equals(serverType)) {
             // Blocking servers
             // SSL socket
             TServerSocket tServerSocket;
@@ -212,6 +214,17 @@ public class CommonServer {
 
                 serverEngine = new TThreadPoolServer(tThreadPoolServerArgs);
             }
+        } else { //ServerType.HTTP_TOMCAT.getCode().equals(serverType)
+            TTomcatServer.Args tTomcatServerArgs = new TTomcatServer.Args(null);
+            tTomcatServerArgs.processor(tProcessor);
+            tTomcatServerArgs.protocolFactory(tProtocolFactory);
+            tTomcatServerArgs.transportFactory(tTransportFactory);
+
+            TomcatServerConfig tomcatServerConfig = (TomcatServerConfig) serverConfig;
+            tTomcatServerArgs.baseDir(tomcatServerConfig.getBasedir());
+            tTomcatServerArgs.port(port);
+
+            serverEngine = new TTomcatServer(tTomcatServerArgs);
         }
 
         //Set server event handler

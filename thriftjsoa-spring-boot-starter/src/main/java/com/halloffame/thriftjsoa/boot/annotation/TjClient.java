@@ -17,7 +17,7 @@ public @interface TjClient {
     /**
      * 请求的Tj服务端在注册中心（zooKeeper）的根路径
      */
-    @AliasFor("name")
+    @AliasFor("zkRootPath")
     String value() default CommonServer.ZK_ROOT_PATH;
 
     /**
