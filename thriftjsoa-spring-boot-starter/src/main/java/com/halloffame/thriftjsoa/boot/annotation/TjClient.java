@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa.boot.annotation;
 
-import com.halloffame.thriftjsoa.common.CommonServer;
+import com.halloffame.thriftjsoa.core.common.CommonServer;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
@@ -29,6 +29,6 @@ public @interface TjClient {
     /**
      * 用于TMultiplexedProtocol的SERVICE_NAME的自定义名称
      */
-    String multipleServiceName();
+    String multipleServiceName() default "";
 
 }

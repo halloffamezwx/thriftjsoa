@@ -3,7 +3,7 @@ package com.halloffame.thriftjsoa.boot.properties;
 import com.halloffame.thriftjsoa.boot.config.ThriftJsoaProxyConfig;
 import com.halloffame.thriftjsoa.boot.config.ThriftJsoaServerConfig;
 import com.halloffame.thriftjsoa.boot.constant.ThriftjsoaConstant;
-import com.halloffame.thriftjsoa.config.client.ThriftJsoaClientConfig;
+import com.halloffame.thriftjsoa.core.config.client.ThriftJsoaClientConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

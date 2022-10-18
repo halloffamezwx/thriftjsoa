@@ -4,16 +4,27 @@ thriftjsoa:
       #appId: testProxy-1 # 服务的唯一标识，不填就是ip:port，或有配注册中心（zookeeper）的时候就是zkRootPath + zkNodePath
       port: 4567 # 服务端口，默认9090
       ssl: false # 通信是否加密，默认false
-      transportType: fastframed # 传输方式：buffered, framed, fastframed(default), http(需要Servlet容器例如tomcat，未实现)
-      #httpPath: # 当传输方式为http时的请求path路径(未实现)，默认空字符串，相当于Servlet容器例如tomcat的web项目的根路径
-      protocolType: compact # 传输协议：binary, compact(default), json
+      generalTransportType: fastframed # 传输方式：buffered, framed, fastframed(default), http
+      #inTransportType: # in传输方式
+      #outTransportType: # out传输方式
+      #httpPath: # 当服务模式为tomcat时的请求path路径，默认空字符串，相当于Servlet容器例如tomcat的web项目的根路径
+      generalProtocolType: compact # 传输协议：binary, compact(default), json
+      #inProtocolType: # in传输协议
+      #outProtocolType: # out传输协议
       connValidateMethodName: thriftJsoaConnValidateMethod # 链接连通性检查的请求的不存在的接口名，默认thriftJsoaConnValidateMethod
+      shutdownGracefulMethodName: thriftJsoaShutdownGracefulMethod # 优雅关机的请求的不存在的接口名，默认thriftJsoaShutdownGracefulMethod
+      getServerStatusMethodName: thriftJsoaGetServerStatusMethod # 获取服务状态的请求的不存在的接口名，默认thriftJsoaGetServerStatusMethod
       selectorThreads: 2 # 用来处理已经连接的网络IO的线程数，默认2
       workerThreads: 5 # 用来处理请求消息的工作线程数（未指定executorService），设为0时，将在selectorThreads里处理，TNonblockingServer就是这样实现的，默认5
       acceptQueueSizePerThread: 4 # accept线程的连接传到每个selector线程的阻塞队列的大小，默认4
+      shutdownCheckFrequency: 10 # 优雅停机检查服务状态的次数，默认10
+      shutdownCheckIntervalTime: 1000 # 优雅停机检查服务状态的间隔时间，单位：ms，默认1000
+      socketTimeOut: 10000 # socket读超时时间，单位ms，默认10000
     loadBalanceClientConfig: # 负载均衡客户端配置，默认LoadBalanceClientConfig
-      zkConnConfig: # 注册中心（zookeeper）连接配置，默认ZkConnConfig
+      #appName: # 请求的服务名
+      zkRegisterConfig: # 注册中心（zookeeper）连接配置，默认ZkRegisterConfig
         zkConnStr: localhost:2181 # 连接串，默认localhost:2181
         zkSessionTimeout: 5000 # 会话的有效时间，单位是毫秒，默认5000
         zkRootPath: /thriftJsoaServer # 根路径，默认/thriftJsoaServer
       loadBalanceType: randomWeight # 负载均衡类型：leastConn, polling, random, leastConnWeight, pollingWeight, randomWeight(建议)，默认不指定
+      #inTjServer: true # 是否在ThriftJsoa服务里发起连接请求，涉及traceId的消息头协议解析处理等，默认true

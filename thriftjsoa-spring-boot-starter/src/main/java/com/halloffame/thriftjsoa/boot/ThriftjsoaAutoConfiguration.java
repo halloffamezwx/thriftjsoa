@@ -1,7 +1,5 @@
 package com.halloffame.thriftjsoa.boot;
 
-import com.halloffame.thriftjsoa.ThriftJsoaProxy;
-import com.halloffame.thriftjsoa.ThriftJsoaServer;
 import com.halloffame.thriftjsoa.boot.annotation.EnableTjClients;
 import com.halloffame.thriftjsoa.boot.annotation.TjClient;
 import com.halloffame.thriftjsoa.boot.annotation.TjClientScan;
@@ -13,17 +11,20 @@ import com.halloffame.thriftjsoa.boot.constant.ThriftjsoaConstant;
 import com.halloffame.thriftjsoa.boot.properties.ThriftjsoaProperties;
 import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaProxyRunner;
 import com.halloffame.thriftjsoa.boot.runner.ThriftjsoaServerRunner;
-import com.halloffame.thriftjsoa.common.CommonServer;
-import com.halloffame.thriftjsoa.config.BaseServerConfig;
-import com.halloffame.thriftjsoa.config.client.LoadBalanceClientConfig;
-import com.halloffame.thriftjsoa.config.client.ThriftJsoaClientConfig;
-import com.halloffame.thriftjsoa.config.common.ClientClassConfig;
-import com.halloffame.thriftjsoa.config.common.ZkConnConfig;
-import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
-import com.halloffame.thriftjsoa.util.ClassUtil;
+import com.halloffame.thriftjsoa.core.ThriftJsoaProxy;
+import com.halloffame.thriftjsoa.core.ThriftJsoaServer;
+import com.halloffame.thriftjsoa.core.common.CommonServer;
+import com.halloffame.thriftjsoa.core.config.BaseServerConfig;
+import com.halloffame.thriftjsoa.core.config.client.LoadBalanceClientConfig;
+import com.halloffame.thriftjsoa.core.config.client.ThriftJsoaClientConfig;
+import com.halloffame.thriftjsoa.core.config.common.ClientClassConfig;
+import com.halloffame.thriftjsoa.core.config.common.ProcessorConfig;
+import com.halloffame.thriftjsoa.core.config.register.ZkRegisterConfig;
+import com.halloffame.thriftjsoa.core.session.ThriftJsoaSessionData;
+import com.halloffame.thriftjsoa.core.session.ThriftJsoaSessionFactory;
+import com.halloffame.thriftjsoa.core.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.thrift.TProcessor;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -63,7 +64,8 @@ public class ThriftjsoaAutoConfiguration {
 
     @Autowired
     //@Qualifier("thriftjsoaProcessor")
-    private TProcessor tProcessor; //需要使用该starter的业务工程实例化一个TProcessor类型的bean
+    //private TProcessor tProcessor; //需要使用该starter的业务工程实例化一个TProcessor类型的bean
+    private List<ProcessorConfig> processorConfigs;
 
     @Autowired(required = false)
     private TjExecutorService tjExecutorService;
@@ -76,7 +78,7 @@ public class ThriftjsoaAutoConfiguration {
     @PostConstruct
     public void init() throws Exception {
         CuratorFramework zkCf = null;
-        ZkConnConfig zkConnConfig = null;
+        ZkRegisterConfig zkRegisterConfig = null;
         ThriftJsoaServerConfig server = thriftjsoaProperties.getServer();
         ThriftJsoaProxyConfig proxy = thriftjsoaProperties.getProxy();
 
@@ -91,9 +93,10 @@ public class ThriftjsoaAutoConfiguration {
                 serverConfig = server.getThreadedSelectorServerConfig().setExecutorService(
                         tjExecutorService != null ? tjExecutorService.getExecutorService() : null);
             }
-            serverConfig.setProcessor(tProcessor);
-            zkConnConfig = serverConfig.getZkConnConfig();
-            zkCf = CommonServer.connZkCf(zkConnConfig);
+
+            serverConfig.setProcessorConfigs(processorConfigs);
+            zkRegisterConfig = serverConfig.getZkRegisterConfig();
+            zkCf = CommonServer.connZkCf(zkRegisterConfig);
             serverConfig.setZkCf(zkCf);
         }
         if (Objects.nonNull(proxy)) {
@@ -108,23 +111,23 @@ public class ThriftjsoaAutoConfiguration {
                         tjProxyExecutorService != null ? tjProxyExecutorService.getExecutorService() : null));
             }
             BaseServerConfig baseServerConfig = proxy.getServerConfig();
-            baseServerConfig.setProcessor(tProcessor);
+            //baseServerConfig.setProcessorConfigs(processorConfigs);
 
             CuratorFramework proxyZkCf = zkCf;
-            ZkConnConfig proxyZkConnConfig = zkConnConfig;
+            ZkRegisterConfig proxyZkRegisterConfig = zkRegisterConfig;
             LoadBalanceClientConfig loadBalanceClientConfig = proxy.getLoadBalanceClientConfig();
-            if (Objects.nonNull(loadBalanceClientConfig.getZkConnConfig())) {
-                proxyZkConnConfig = loadBalanceClientConfig.getZkConnConfig();
-                proxyZkCf = CommonServer.connZkCf(proxyZkConnConfig);
+            if (Objects.nonNull(loadBalanceClientConfig.getZkRegisterConfig())) {
+                proxyZkRegisterConfig = loadBalanceClientConfig.getZkRegisterConfig();
+                proxyZkCf = CommonServer.connZkCf(proxyZkRegisterConfig);
             }
-            loadBalanceClientConfig.setZkConnConfig(proxyZkConnConfig);
+            loadBalanceClientConfig.setZkRegisterConfig(proxyZkRegisterConfig);
             loadBalanceClientConfig.setZkCf(proxyZkCf);
 
-            if (Objects.isNull(baseServerConfig.getZkConnConfig())) {
-                baseServerConfig.setZkConnConfig(proxyZkConnConfig);
+            if (Objects.isNull(baseServerConfig.getZkRegisterConfig())) {
+                baseServerConfig.setZkRegisterConfig(proxyZkRegisterConfig);
                 baseServerConfig.setZkCf(proxyZkCf);
             } else {
-                baseServerConfig.setZkCf(CommonServer.connZkCf(baseServerConfig.getZkConnConfig()));
+                baseServerConfig.setZkCf(CommonServer.connZkCf(baseServerConfig.getZkRegisterConfig()));
             }
         }
     }
@@ -216,17 +219,17 @@ public class ThriftjsoaAutoConfiguration {
 
             boolean isFindCfg = false;
             for (LoadBalanceClientConfig loadBalanceClientConfigIt : loadBalanceClientConfigs) {
-                ZkConnConfig zkConnConfig = loadBalanceClientConfigIt.getZkConnConfig();
+                ZkRegisterConfig zkRegisterConfig = loadBalanceClientConfigIt.getZkRegisterConfig();
 
-                if (Objects.isNull(zkConnConfig) || StringUtils.isEmpty(zkConnConfig.getZkRootPath()) ||
-                    Objects.equals(entry.getKey(), zkConnConfig.getZkRootPath()))
+                if (Objects.isNull(zkRegisterConfig) || StringUtils.isEmpty(zkRegisterConfig.getZkRootPath()) ||
+                    Objects.equals(entry.getKey(), zkRegisterConfig.getZkRootPath()))
                 {
-                    if (Objects.isNull(zkConnConfig) || StringUtils.isEmpty(zkConnConfig.getZkRootPath())) {
-                        if (Objects.isNull(zkConnConfig)) {
-                            zkConnConfig = new ZkConnConfig().setZkRootPath(entry.getKey());
-                            loadBalanceClientConfigIt.setZkConnConfig(zkConnConfig);
+                    if (Objects.isNull(zkRegisterConfig) || StringUtils.isEmpty(zkRegisterConfig.getZkRootPath())) {
+                        if (Objects.isNull(zkRegisterConfig)) {
+                            zkRegisterConfig = new ZkRegisterConfig().setZkRootPath(entry.getKey());
+                            loadBalanceClientConfigIt.setZkRegisterConfig(zkRegisterConfig);
                         }
-                        zkConnConfig.setZkRootPath(entry.getKey());
+                        zkRegisterConfig.setZkRootPath(entry.getKey());
                     }
 
                     for (Class<?> tjClientClass : tjClientClassSubArr) {
@@ -263,15 +266,15 @@ public class ThriftjsoaAutoConfiguration {
 
                 loadBalanceClientConfig.setClazzs(clazzs);
                 loadBalanceClientConfig.setLoadBalanceType(thriftjsoaProperties.getServer().getLoadBalanceType());
-                loadBalanceClientConfig.setZkConnConfig(new ZkConnConfig().setZkRootPath(entry.getKey()));
+                loadBalanceClientConfig.setZkRegisterConfig(new ZkRegisterConfig().setZkRootPath(entry.getKey()));
                 loadBalanceClientConfigs.add(loadBalanceClientConfig);
             }
         }
 
         if (Objects.nonNull(serverConfig)) {
             for (LoadBalanceClientConfig loadBalanceClientConfig : loadBalanceClientConfigs) {
-                ZkConnConfig zkConnConfig = loadBalanceClientConfig.getZkConnConfig();
-                if (Objects.isNull(zkConnConfig) || StringUtils.isEmpty(zkConnConfig.getZkConnStr())) {
+                ZkRegisterConfig zkRegisterConfig = loadBalanceClientConfig.getZkRegisterConfig();
+                if (Objects.isNull(zkRegisterConfig) || StringUtils.isEmpty(zkRegisterConfig.getZkConnStr())) {
                     loadBalanceClientConfig.setZkCf(serverConfig.getZkCf());
                 }
             }
@@ -289,6 +292,9 @@ public class ThriftjsoaAutoConfiguration {
 
             beanFactory.registerBeanDefinition(obj.getClass().getSimpleName(), beanDefinition);
         }
+
+        //Map<String, BaseMapper> map = applicationContext.getBeansOfType(BaseMapper.class);
+        ThriftJsoaSessionData.applicationContext = applicationContext;
 
         return sessionFactory;
     }

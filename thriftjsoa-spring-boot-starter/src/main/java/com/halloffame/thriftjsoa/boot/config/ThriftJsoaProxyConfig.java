@@ -1,10 +1,7 @@
 package com.halloffame.thriftjsoa.boot.config;
 
-import com.halloffame.thriftjsoa.config.BaseProxyConfig;
-import com.halloffame.thriftjsoa.config.server.NonblockingServerConfig;
-import com.halloffame.thriftjsoa.config.server.SimpleServerConfig;
-import com.halloffame.thriftjsoa.config.server.ThreadPoolServerConfig;
-import com.halloffame.thriftjsoa.config.server.ThreadedSelectorServerConfig;
+import com.halloffame.thriftjsoa.core.config.BaseProxyConfig;
+import com.halloffame.thriftjsoa.core.config.server.*;
 import lombok.Data;
 
 /**
@@ -21,5 +18,7 @@ public class ThriftJsoaProxyConfig extends BaseProxyConfig {
     private NonblockingServerConfig nonblockingServerConfig;
     private ThreadPoolServerConfig threadPoolServerConfig;
     private SimpleServerConfig simpleServerConfig;
+    private TomcatServerConfig tomcatServerConfig;
+    private NettyServerConfig nettyServerConfig;
 
 }

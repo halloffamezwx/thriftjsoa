@@ -1,8 +1,8 @@
 package com.halloffame.thriftjsoa.boot.aspect;
 
 import com.halloffame.thriftjsoa.boot.annotation.TjSession;
-import com.halloffame.thriftjsoa.session.ThriftJsoaSession;
-import com.halloffame.thriftjsoa.session.ThriftJsoaSessionFactory;
+import com.halloffame.thriftjsoa.core.session.ThriftJsoaSession;
+import com.halloffame.thriftjsoa.core.session.ThriftJsoaSessionFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;

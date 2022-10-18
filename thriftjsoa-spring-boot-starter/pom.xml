@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.halloffame</groupId>
         <artifactId>thriftjsoa</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>thriftjsoa-spring-boot-starter</artifactId>
@@ -13,8 +13,8 @@
     <dependencies>
         <dependency>
             <groupId>com.halloffame</groupId>
-            <artifactId>thriftjsoa-main</artifactId>
-            <version>${thriftjsoa-main.version}</version>
+            <artifactId>thriftjsoa-core</artifactId>
+            <version>${thriftjsoa-core.version}</version>
         </dependency>
 
         <dependency>

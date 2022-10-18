@@ -1,6 +1,6 @@
 package com.halloffame.thriftjsoa.boot.runner;
 
-import com.halloffame.thriftjsoa.ThriftJsoaProxy;
+import com.halloffame.thriftjsoa.core.ThriftJsoaProxy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

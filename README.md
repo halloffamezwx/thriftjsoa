@@ -9,12 +9,14 @@ thriftjsoa是一个基于`apache thrift`的`SOA`框架，其中的j代表实现�
 ### 2 特性：
 * 接入了spring boot
 * 服务调用支持traceId功能
-* 支持用java代码来定义接口，无需用thrift接口定义文件来生成代码
+* 支持用java代码来定义和调用接口，无需用thrift接口定义文件来生成代码
 * 客户端支持连接池功能，可以用注解来自动关闭释放连接资源，类似事务注解@Transactional
 * 负载均衡支持客户端和代理端，包括：随机，轮询，最小连接数。以上算法都可以选择是否加权
-* 集成tomcat支持http（开发中。。。）
-* 传输协议支持Protocol Buffers以及服务模式支持Netty（开发中。。。）
-* 支持用注解的方式配置客户端（开发中。。。）
+* 集成tomcat-embed支持http，服务模式支持netty
+* 传输协议集成protostuff，kryo
+* 支持用注解的方式配置客户端，客户端代理类生成支持cglib和jdk原生两种方式
+* 支持优雅关机功能
+* 集成了MyBatis-Plus的BaseMapper的公共方法
 
 ### 3 使用方式：
 服务端例子参考thriftjsoa-boot-server-test模块代码，代理端例子参考thriftjsoa-boot-proxy-test模块代码，客户端例子参考thriftjsoa-boot-client-test模块代码，
@@ -23,80 +25,45 @@ spring-boot-starter的maven依赖如下所示：
 <dependency>
     <groupId>com.halloffame</groupId>
     <artifactId>thriftjsoa-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
-#### 3.1 定义接口（两种实现方式）
-① 编写接口定义文件UserService.thrift，定义了一个接口getUser。 使用tools目录的`thrift.exe`执行命令`thrift --gen java UserService.thrift`，
-生成文件UserService.java和User.java。
-```thrift
-namespace java com.halloffame.thriftjsoa.sample.iface
-
-struct User
-{
-    1: i32 id,
-    2: string name
-}
-
-service UserService
-{
-    User getUser(1: i32 id)
-}
-```
-
-② 直接用java代码的方式来定义接口，包括客户端和服务端的
+#### 3.1 定义接口
+直接用java代码的方式来定义一个根据id查询用户信息的接口
 ```java
 @Data
 public class User {
-
-    /**
-     * id
-     */
     private int id;
-
-    /**
-     * 名称
-     */
     private String name;
 }
 ```
 ```java
-//客户端
-public interface UserClient extends BaseClient<User> {
+public abstract class UserService extends BaseService<User, User, BaseMapper<User>> {
+    abstract User getUser(int id);
+}
+```
 
-    /**
-     * 获取用户
-     */
+#### 3.2 服务端（包括客户端）实现
+编写服务端spring boot工程的入口类，配置文件，业务实现类以及客户端调用类，启动`zookeeper`，然后启动spring boot工程，看到日志`Starting the server on port 9090...`代表server启动成功。
+
+① 编写业务实现类和客户端调用类，实现`3.1`用java代码定义的抽象类`UserService`。
+```java
+//客户端调用类
+@TjClient
+public interface UserClient extends BaseClient<User, User> {
     User getUser(int id);
 }
 ```
 ```java
-//服务端
-public abstract class UserService extends BaseService<User> {
-
-    /**
-     * 获取用户
-     */
-    public abstract User getUser(int id);
-}
-```
-
-#### 3.2 服务端实现
-编写服务端spring boot工程的入口类，配置文件以及业务实现类，启动`zookeeper`（tools目录下有zk的安装文件`zookeeper-3.4.10.tar.gz`，解压即可），
-然后启动spring boot工程，看到日志`Starting the server on port 9090...`代表server启动成功。
-
-① 编写业务实现类，有两种方式：第一种是实现根据接口定义文件生成的接口`UserService.Iface`， 第二种是继承实现用java代码定义的抽象类`UserService`。
-分别对应`3.1`的两种接口定义方式
-```java
+//业务实现类
 @Service
 @Slf4j
-//public class UserServiceImpl extends UserService { //java代码定义的接口
-public class UserServiceImpl implements UserService.Iface {
+public class UserServiceImpl extends UserService {
+    @Autowired
+    private UserClient userClient;
 
-    /**
-     * 获取用户
-     */
+    @TjSession
     @Override
     public User getUser(int id) {
         log.info("id={}", id);
@@ -109,14 +76,17 @@ public class UserServiceImpl implements UserService.Iface {
             user.setName("另外一个烟火");
             return user;
         }
+        //log.info("" + userClient.getUser(2));
         return null;
     }
 }
 ```
 
-② 编写spring boot工程入口类，其中TProcessor这个bean的定义可以用接口定义文件生成的也可以用java代码定义的，对应`3.2.1`的两种不同实现方式
+② 编写spring boot工程入口类
 ```java
 @SpringBootApplication
+@EnableTjClients
+@EnableTjSessionManagement
 public class Application {
 
     public static void main(String[] args) {
@@ -124,11 +94,10 @@ public class Application {
     }
 
     @Bean
-    public TProcessor tProcessor(UserService.Iface userService) {
-        TProcessor tProcessor = new UserService.Processor(userService); //根据UserService.thrift生成的Processor
-        /** tProcessor = new ThriftJsoaSessionProcessor<com.halloffame.thriftjsoa.sample.iface.session.UserService>(
-         new com.halloffame.thriftjsoa.sample.iface.session.UserServiceImpl()); */
-        return tProcessor;
+    public List<ProcessorConfig> processorConfigs(UserService userService) {
+        List<ProcessorConfig> processorConfigs = new ArrayList<>();
+        processorConfigs.add(new ProcessorConfig().setTProcessor(new ThriftJsoaSessionProcessor<UserService>(new UserServiceImpl())));
+        return processorConfigs;
     }
 }
 ```
@@ -139,7 +108,7 @@ thriftjsoa:
   server:
     threadedSelectorServerConfig: # 服务模式，默认ThreadedSelectorServerConfig
       port: 9090 # 服务端口，默认9090
-      zkConnConfig: # 注册中心（zookeeper）连接配置
+      zkRegisterConfig: # 注册中心（zookeeper）连接配置
         zkConnStr: localhost:2181 # 连接串，默认localhost:2181
 ```
 
@@ -164,95 +133,7 @@ thriftjsoa:
     threadedSelectorServerConfig: # 服务模式，默认ThreadedSelectorServerConfig
       port: 4567 # 服务端口，默认9090
     loadBalanceClientConfig: # 负载均衡客户端配置，默认LoadBalanceClientConfig
-      zkConnConfig: # 注册中心（zookeeper）连接配置，默认ZkConnConfig
+      zkRegisterConfig: # 注册中心（zookeeper）连接配置，默认ZkRegisterConfig
         zkConnStr: localhost:2181 # 连接串，默认localhost:2181
       loadBalanceType: randomWeight # 负载均衡类型：leastConn, polling, random, leastConnWeight, pollingWeight, randomWeight(建议)，默认不指定
-```
-
-#### 3.4 客户端实现
-编写客户端spring boot工程的入口类，配置文件，业务类以及测试用例。其中业务类引用client调用服务端接口的方式有两种，对应`3.1`的两种实现方式。
-启动运行测试用例，日志打印`名字：另外一个烟火`，结果符合预期。
-
-① 编写spring boot工程入口类
-```java
-@SpringBootApplication
-@EnableThriftjsoaSession
-public class Application {
-
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
-}
-```
-
-② 编写spring boot工程配置文件
-```yaml
-thriftjsoa:
-  client:
-    list:
-      - clazzs: # 客户端类列表，指定多个就是TMultiplexedProtocol
-          - name: com.halloffame.thriftjsoa.sample.iface.UserService.Client # 客户端类的全路径
-            sessionName: com.halloffame.thriftjsoa.sample.iface.session.UserClient # 非接口定义文件生成的client类
-        clientConfigs: # 客户端配置列表，可以指定多个进行负载均衡
-          - host: localhost # 主机地址，默认localhost
-            port: 4567 # 主机端口，默认9090   
-```
-
-③ 编写业务类，包括接口
-```java
-public interface ClientTestService {
-
-    /**
-     * 客户端测试
-     */
-    void clientTest() throws Exception;
-}
-```
-```java
-@Service
-@Slf4j
-public class ClientTestServiceImpl implements ClientTestService {
-
-    /**
-     * 非接口定义文件生成的client对象
-     */
-    @Autowired
-    private UserClient userClient;
-
-    /**
-     * 客户端测试
-     */
-    @OpenThriftjsoaSession
-    @Override
-    public void clientTest() throws Exception {
-        UserService.Client generateUserClient = ThriftJsoaSessionData.SESSION_TL.get().createClient(UserService.Client.class);
-        User generateUser = generateUserClient.getUser(2); //getUser就是UserService.thrift所定义的接口
-        //ThriftJsoaSessionData.SESSION_TL.get().close(UserService.Client.class, true);
-        log.info("名字：{}", generateUser.getName());
-        log.info("traceId：{}", ThriftJsoaUtil.getTraceId());
-        log.info("appId：{}", ThriftJsoaUtil.getAppId());
-
-        com.halloffame.thriftjsoa.sample.iface.session.User user = userClient.getUser(2);
-        //ThriftJsoaSessionData.SESSION_TL.get().close(UserClient.class, true);
-        log.info("名字：{}", user.getName());
-        log.info("traceId：{}", ThriftJsoaUtil.getTraceId());
-        log.info("appId：{}", ThriftJsoaUtil.getAppId());
-    }
-}
-```
-
-④ 编写spring boot工程测试用例
-```java
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class ApplicationTests {
-
-    @Autowired
-    private ClientTestService clientTestService;
-
-    @Test
-    public void clientTest() throws Exception {
-        clientTestService.clientTest();
-    }
-}
 ```

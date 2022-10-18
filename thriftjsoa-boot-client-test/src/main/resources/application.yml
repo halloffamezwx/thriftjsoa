@@ -2,19 +2,27 @@ thriftjsoa:
   client:
     #inTjServer: false # 是否在ThriftJsoa服务里发起连接请求，涉及traceId的消息头协议解析处理等，默认false
     list:
-      - clazzs: # 客户端类列表，指定多个就是TMultiplexedProtocol
-          - name: com.halloffame.thriftjsoa.sample.iface.UserService.Client # 客户端类的全路径
-            sessionName: com.halloffame.thriftjsoa.sample.iface.session.UserClient # 非接口定义文件生成的client类
+      - #appName: # 请求的服务名
+        clazzs: # 客户端类列表，指定多个就是TMultiplexedProtocol
+          - name: com.halloffame.thriftjsoa.test.UserService.Client # 客户端类的全路径
+            sessionName: com.halloffame.thriftjsoa.test.session.UserClient # 非接口定义文件生成的client类
             #serviceName: serviceName1 # 自定义名称，用于TMultiplexedProtocol的SERVICE_NAME
         clientConfigs: # 客户端配置列表，可以指定多个进行负载均衡
           - host: localhost # 主机地址，默认localhost
             port: 4567 # 主机端口，默认9090
             ssl: false # 通信是否加密，默认false
-            transportType: fastframed # 传输方式：buffered, framed, fastframed(default), http
+            generalTransportType: fastframed # 传输方式：buffered, framed, fastframed(default), http
+            #inTransportType: # in传输方式
+            #outTransportType: # out传输方式
             #httpPath: # 当传输方式为http时的请求path路径，默认空字符串，相当于Servlet容器例如tomcat的web项目的根路径
-            protocolType: compact # 传输协议：binary, compact(default), json
+            generalProtocolType: compact # 传输协议：binary, compact(default), json
+            #inProtocolType: # in传输协议
+            #outProtocolType: # out传输协议
             connValidateMethodName: thriftJsoaConnValidateMethod # 链接连通性检查的请求的不存在的接口名，默认thriftJsoaConnValidateMethod
-            socketTimeOut: 3000 # 请求server的读超时时间，单位是毫秒，默认3000
+            shutdownGracefulMethodName: thriftJsoaShutdownGracefulMethod # 优雅关机的请求的不存在的接口名，默认thriftJsoaShutdownGracefulMethod
+            getServerStatusMethodName: thriftJsoaGetServerStatusMethod # 获取服务状态的请求的不存在的接口名，默认thriftJsoaGetServerStatusMethod
+            socketTimeOut: 3000 # 请求server的读超时时间，单位是毫秒，默认10000
+            #appId: # 请求的服务id
             #maxTotal: 1 # 最大连接数，并不会真的限制请求，只是用来负载均衡时计算权重，如果配了连接池则以poolConfig.maxTotal为准，默认1
             #poolConfig: # 连接池配置
               #maxTotal: 15 # 最大连接数，默认为8
@@ -23,8 +31,7 @@ thriftjsoa:
               #testWhileIdle: true # 默认false，启动连接池的对象有效性检查，对象空闲时每隔timeBetweenEvictionRunsMillis毫秒调用连接池的validateObject进行检查
               #timeBetweenEvictionRunsMillis: 9000 # 默认-1不启动，启动连接池的对象有效性检查，对象空闲时每隔配置的毫秒数调用连接池的validateObject进行检查
         loadBalanceType: # 负载均衡类型：leastConn, polling, random, leastConnWeight, pollingWeight, randomWeight(建议)，默认不指定
-        #zkConnConfig: # 注册中心（zookeeper）连接配置，不指定clientConfigs的时候生效
+        #zkRegisterConfig: # 注册中心（zookeeper）连接配置，不指定clientConfigs的时候生效
           #zkConnStr: localhost:2181 # 连接串，默认localhost:2181
           #zkSessionTimeout: 5000 # 会话的有效时间，单位是毫秒，默认5000
           #zkRootPath: /thriftJsoaServer # 根路径，默认/thriftJsoaServer
-          #zkNodePath: /testServer-1 # 服务节点的path，不指定就是获取根路径下的所有服务
