@@ -52,7 +52,7 @@ import java.util.*;
 @Configuration
 @ConditionalOnClass({ThriftJsoaServer.class, ThriftJsoaProxy.class})
 @EnableConfigurationProperties(ThriftjsoaProperties.class)
-@ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_PREFIX)
+//@ConditionalOnProperty(value = ThriftjsoaConstant.THRIFTJSOA_PREFIX)
 @Slf4j
 public class ThriftjsoaAutoConfiguration {
 
