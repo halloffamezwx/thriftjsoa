@@ -92,7 +92,7 @@ public class TNettyServer extends TServer {
     }
 
     private static ExecutorService createDefaultExecutorService(TNettyServer.Args args) {
-        SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<Runnable>();
+        SynchronousQueue<Runnable> executorQueue = new SynchronousQueue<>();
         return new ThreadPoolExecutor(5, //Runtime.getRuntime().availableProcessors() * 2 + 1
                 2000, //Integer.MAX_VALUE
                 EXECUTOR_SERVICE_KEEP_ALIVE_TIME,

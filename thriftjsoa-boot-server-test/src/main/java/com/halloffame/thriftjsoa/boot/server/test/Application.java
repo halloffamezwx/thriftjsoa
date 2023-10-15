@@ -36,6 +36,7 @@ public class Application {
 
     //@Bean
     public TjExecutorService tjExecutorService() {
+        //new TjExecutorService(new AkkaExecutorService());
         return new TjExecutorService(Executors.newFixedThreadPool(5));
     }
 
