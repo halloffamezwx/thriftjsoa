@@ -18,7 +18,6 @@ public class MyNioServer {
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.socket().bind(new InetSocketAddress(4567));
         serverChannel.configureBlocking(false);
-        System.out.println("Starting the proxy on port 4567...");
 
         // 创建一个选择器并将serverChannel注册到它上面
         Selector selector = Selector.open();
@@ -70,6 +69,7 @@ public class MyNioServer {
                             key.interestOps(SelectionKey.OP_WRITE);
                             //channel.write();
                         } else {
+                            //可以分批读取body，读完每一批copy合并到attachment
                             long bytesRead = channel.read(attachment.getBoydBuffer());
                             if (bytesRead == -1) {
                                 channel.close();
@@ -110,6 +110,10 @@ public class MyNioServer {
         System.out.println(buffer.limit());
 
         System.out.println(Arrays.toString(buffer.array()));
+
+        byte[] bytes = new byte[0];
+        System.out.println(Arrays.toString(bytes));
+        System.out.println(bytes.length);
     }
 
 }

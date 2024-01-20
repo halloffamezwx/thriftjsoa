@@ -75,6 +75,7 @@ public class MyNioClient {
                             //key.interestOps(SelectionKey.OP_WRITE);
                             //channel.write();
                         } else {
+                            //可以分批读取body，读完每一批copy合并到attachment
                             long bytesRead = channel.read(attachment.getBoydBuffer());
                             if (bytesRead == -1) {
                                 channel.close();
