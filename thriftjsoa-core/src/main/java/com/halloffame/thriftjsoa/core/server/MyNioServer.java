@@ -55,14 +55,15 @@ public class MyNioServer {
                             long bytesRead = channel.read(attachment.getLengthBuffer());
                             if (bytesRead == -1) {
                                 channel.close();
+                            } else {
+                                key.interestOps(SelectionKey.OP_READ);
                             }
                         } else {
                             attachment.setLength(attachment.getLengthBuffer().getInt(0));
                             attachment.setBoydBuffer(ByteBuffer.allocate(attachment.getLength()));
                             key.attach(attachment);
+                            key.interestOps(SelectionKey.OP_READ);
                         }
-                        key.interestOps(SelectionKey.OP_READ);
-
                     } else {
                         if (attachment.getBoydBuffer().remaining() == 0) {
                             System.out.println(Arrays.toString(attachment.getBoydBuffer().array()));
@@ -73,8 +74,9 @@ public class MyNioServer {
                             long bytesRead = channel.read(attachment.getBoydBuffer());
                             if (bytesRead == -1) {
                                 channel.close();
+                            } else {
+                                key.interestOps(SelectionKey.OP_READ);
                             }
-                            key.interestOps(SelectionKey.OP_READ);
                         }
                     }
                 }

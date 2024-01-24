@@ -38,10 +38,11 @@ public class MyBioServer {
 
                 //可以循环读取连续的请求
                 byte[] lengthBytes = readBytes(4, is);
-                if (lengthBytes != null && lengthBytes.length > 0) {
+                if (lengthBytes != null) {
                     byte[] bodyBytes = readBytes(new BigInteger(lengthBytes).intValue(), is);
-                    if (bodyBytes != null && bodyBytes.length > 0) {
+                    if (bodyBytes != null) {
                         //os.write();
+                        //os.flush();
                     }
                 }
             } catch (Exception e) {
@@ -67,7 +68,8 @@ public class MyBioServer {
         private byte[] readBytes(int length, InputStream is) throws Exception {
             if(length <= 0){
                 //return null;
-                return new byte[0];
+                //return new byte[0];
+                throw new RuntimeException("length不合法");
             }
             byte[] buffer = new byte[length];
             for (int i = 0; i < length;) {
