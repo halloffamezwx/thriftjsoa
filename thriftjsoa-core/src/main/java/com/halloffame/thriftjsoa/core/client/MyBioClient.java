@@ -23,17 +23,20 @@ public class MyBioClient {
         os.write(bodyBytes);
 
         byte[] readLengthBytes = readBytes(4, is);
-        if (readLengthBytes == null) {
-            closeAll(socket,  is,  os);
-        } else if (readLengthBytes.length > 0) {
+        if (readLengthBytes != null) {
             byte[] readBodyBytes = readBytes(ByteBuffer.wrap(readLengthBytes).getInt(), is);
+            if (readBodyBytes != null) {
+                //
+            }
         }
+        closeAll(socket,  is,  os);
     }
 
     public static byte[] readBytes(int length, InputStream is) throws Exception {
         if(length < 0){
             //return null;
-            return new byte[0];
+            //return new byte[0];
+            throw new RuntimeException("length不合法");
         }
         byte[] buffer = new byte[length];
         for (int i = 0; i < length;) {
